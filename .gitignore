@@ -1,3 +1,8 @@
+# Our own ignores
+
+data/twitter-datasets.zip
+data/twitter-datasets/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
