@@ -120,6 +120,10 @@ class TweetData(Dataset):
     
 
     def __getitem__(self, index: int) -> dict:
+
+        if index >= len(self):
+            raise IndexError
+
         data_element = self.pd_table.iloc[index]
         if self.test_mode:        
             return {'id': data_element['id'], 'tweet': data_element['tweet']}
