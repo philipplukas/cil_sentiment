@@ -5,19 +5,55 @@ from functools import partial
 
 import pandas as pd
 import os
+import csv
 
-#from typing import Union
-#from typing import TypedDict
+from typing import List, Tuple, Union
+
+from time import strftime
 
 
 FILE_BASE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "twitter-datasets")
+RESULTS_BASE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results")
+
 SPLIT_NAMES = {
-    "test": ["test_data.txt"],
-    "train_full": ["train_neg_full.txt", "train_pos_full.txt"],
-    "train_sample": ["train_neg.txt", "train_pos.txt"]
+    "test": {"test": "test_data.txt"},
+    "train_full": {"pos": "train_neg_full.txt", "neg": "train_pos_full.txt"},
+    "train_sample": {"pos": "train_neg.txt", "neg": "train_pos.txt"},
+    "debug": {"test": "debug_data.txt"},
+    "debug_train": {"pos": "debug_neg.txt", "neg": "debug_pos.txt"},
 }
 DELIMITER = " "
 
+"""
+If in test mode we will parse and pass the Id along
+to remain consistent when returning the results later.
+"""
+def parse_csv(file_path: str) -> Tuple[List[int], List[str]]:
+
+    ids: List[int] = []
+    tweets: List[str] = []
+
+    with open(file_path) as fp:
+        for line in fp.readlines():
+            line = line.rstrip()
+
+            parts = line.split(',')
+            ids.append(parts[0])
+            tweets.append(','.join(parts[1:]))
+
+    return ids, tweets
+
+def parse_tweets(file_path: str) -> List[str]:
+
+    tweets: List[str] = []
+
+    with open(file_path) as fp:
+        for line in fp.readlines():
+            line = line.rstrip()
+
+            tweets.append(line)
+
+    return tweets
 
 
 #class TrainDataElement(TypedDict):
@@ -40,33 +76,83 @@ class TweetData(Dataset):
         if "test" in split_name:
             self.test_mode = True
 
-        file_names = SPLIT_NAMES[split_name]
-        full_paths = [os.path.join(FILE_BASE, file_name) for file_name in file_names]
+
+        # Set up pandas table
+        # Depending on whether we act on testing data for prediction,
+        # Generate different tables
+        if self.test_mode:
+
+            file_name = SPLIT_NAMES[split_name]["test"]
+            full_path = os.path.join(FILE_BASE, file_name)
         
-        pd_tables = []
-        for full_path in full_paths:
-            if self.test_mode:
-                new_table = pd.read_csv(full_path, names=['tweet'], dtype={'tweet': str})
-            else:
-                new_table = pd.read_csv(full_path, names=['tweet', 'sent'], dtype={'tweet': str, 'sent': int})
-            pd_tables.append(new_table)
+            ids, tweets = parse_csv(full_path)
+            new_table = pd.DataFrame({"id": ids, "tweet":tweets}).set_index("id")
+            self.pd_table = new_table
 
-        self.pd_table = pd.concat(pd_tables)
-        self.pd_table = shuffle(self.pd_table)
 
-        # Reset indices 
-        self.pd_table.reset_index(inplace=True, drop=True) 
+        else:
+
+            file_name_neg = SPLIT_NAMES[split_name]["neg"]
+            file_name_pos = SPLIT_NAMES[split_name]["pos"]
+
+            full_path_neg = os.path.join(FILE_BASE, file_name_neg)
+            full_path_pos = os.path.join(FILE_BASE, file_name_pos)
+
+            tweets_neg = parse_tweets(full_path_neg)
+            tweets_pos = parse_tweets(full_path_pos)
+            
+            pd_tables = []
+
+            table_neg = pd.DataFrame({"tweet":tweets_neg})
+            table_neg["sent"] = -1
+            table_pos = pd.DataFrame({"tweet":tweets_pos})
+            table_pos["sent"] = 1
+
+            self.pd_table = pd.concat([table_neg, table_pos])
+            self.pd_table = shuffle(self.pd_table)
+
+            # Reset indices 
+            self.pd_table.reset_index(inplace=True, drop=True) 
 
 
     def __len__(self) -> int:
         return self.pd_table.shape[0]
     
 
-    def __getitem__(self, index: int) -> dict: #Union[TestDataElement, TrainDataElement]:
+    def __getitem__(self, index: int) -> dict:
         data_element = self.pd_table.iloc[index]
-        if self.test_mode:
-            return {'tweet': data_element['tweet']}#TestDataElement(data_element[0])
+        if self.test_mode:        
+            return {'id': data_element['id'], 'tweet': data_element['tweet']}
         
+        # Training data in this case
         else:
-             # Tweet is in the first column, sentiment in the second
-            return {'tweet': data_element['tweet'], 'sent': data_element['sent']}#TrainDataElement(data_element[0], data_element[1])
+            # Tweet is in the first column, sentiment in the second
+            return {'tweet': data_element['tweet'], 'sent': data_element['sent']}
+            
+
+class ResultData():
+
+    def __init__(self, results: List[Tuple[int, int]]) -> None:
+    
+        self.index, self.sentiments = list(zip(*results))
+        # Starting from 1, but pandas default starts from 0
+        # Therefore we custom generate the indices here.
+
+
+        self.index = [idx+1 for idx in self.index]
+
+        self.table = pd.DataFrame({"Id": self.index, "Prediction":self.sentiments}).set_index("Id")
+
+
+
+    def store(self, result_name: str, time_suffix: bool = True):
+        
+        if time_suffix:
+            suffix = strftime("%m-%d_%H:%M:%S")
+            result_name += "_" + suffix
+
+        result_name += ".csv"
+
+
+        full_path = os.path.join(RESULTS_BASE, result_name)
+        self.table.to_csv(full_path)

@@ -3,6 +3,8 @@ from abc import abstractmethod
 
 from torch.utils.data import DataLoader
 
+from typing import List
+
 """ Abstract class for our model """
 class Model(ABC):
 
@@ -21,5 +23,13 @@ class Model(ABC):
     """
     @abstractmethod
     def evaluate(test_data: DataLoader, accuracy: float):
+        pass
+
+    """ 
+    Predicting sentiment, 
+    returning list of sentiment containing -1 or 1, 
+    Logging of interemediate results as side effect.
+    """
+    def predict(test_data: DataLoader) -> List[int]:
         pass
 
