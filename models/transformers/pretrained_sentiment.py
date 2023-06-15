@@ -28,7 +28,7 @@ class RobertaBaseSentiment(Model):
             # t = '@user' if t.startswith('@') and len(t) > 1 else t
             # Change this since <user> is used in soruce data but @user by this model.
             t = '@user' if t == '<user>' else t
-            t = 'http' if t.startswith('http') else t
+            t = 'http' if t == '<url>' else t
             new_text.append(t)
         return " ".join(new_text)
 
