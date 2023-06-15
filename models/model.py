@@ -33,3 +33,14 @@ class Model(ABC):
     def predict(test_data: DataLoader) -> List[int]:
         pass
 
+    """
+    Every implementation should make use of a config propery whic is a dictionary containing all
+    the parameters in the mdoel which can be chhanged. For example, the learning rate, train/test split ration etc.
+    Also, those parameters will be shown int frontend.
+    """
+    @property
+    @abstractmethod
+    def parameters(self) -> dict:
+        ...
+
+

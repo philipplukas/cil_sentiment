@@ -33,7 +33,7 @@ class RobertaBaseFinetuned(Model):
             # t = '@user' if t.startswith('@') and len(t) > 1 else t
             # Change this since <user> is used in soruce data but @user by this model.
             t = '@user' if t == '<user>' else t
-            t = 'http' if t.startswith('http') else t
+            t = 'http' if t == '<url>' else t
             new_text.append(t)
         return " ".join(new_text)
 
@@ -59,6 +59,8 @@ class RobertaBaseFinetuned(Model):
         # PT
         self.model = AutoModelForSequenceClassification.from_pretrained(MODEL).to(self.device)
         #self.model.save_pretrained(MODEL)
+
+        self.parameters = {'train_test_ratio': 0.1}
     
     """
     Since we are performing zero-shot, no training is required.
@@ -86,7 +88,7 @@ class RobertaBaseFinetuned(Model):
         train_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'], device=self.device)
 
 
-        train_dataset = train_dataset.train_test_split(test_size=0.1)
+        train_dataset = train_dataset.train_test_split(test_size=self.parameters['train_test_ratio'])
 
 
         # Callback to compute metrics for hugginface Trainer class
