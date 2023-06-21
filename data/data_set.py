@@ -17,10 +17,10 @@ RESULTS_BASE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "result
 
 SPLIT_NAMES = {
     "test": {"test": "test_data.txt"},
-    "train_full": {"pos": "train_neg_full.txt", "neg": "train_pos_full.txt"},
-    "train_sample": {"pos": "train_neg.txt", "neg": "train_pos.txt"},
+    "train_full": {"pos": "train_pos_full.txt", "neg": "train_neg_full.txt"},
+    "train_sample": {"pos": "train_pos.txt", "neg": "train_neg.txt"},
     "debug": {"test": "debug_data.txt"},
-    "debug_train": {"pos": "debug_neg.txt", "neg": "debug_pos.txt"},
+    "debug_train": {"pos": "debug_pos.txt", "neg": "debug_neg.txt"},
 }
 DELIMITER = " "
 

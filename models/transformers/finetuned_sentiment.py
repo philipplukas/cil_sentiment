@@ -5,7 +5,7 @@
 from transformers import AutoModelForSequenceClassification
 from transformers import TFAutoModelForSequenceClassification
 from transformers import AutoTokenizer
-from transformers import TrainingArguments, Trainer
+from transformers import TrainingArguments, Trainer, TrainerCallback
 
 from sklearn.model_selection import train_test_split
 import evaluate
@@ -41,7 +41,7 @@ class RobertaBaseFinetuned(Model):
     # emoji, emotion, hate, irony, offensive, sentiment
     # stance/abortion, stance/atheism, stance/climate, stance/feminist, stance/hillary
 
-    def __init__(self, device='cpu'):
+    def __init__(self, config, device='cpu'):
         task='sentiment'
         MODEL = f"cardiffnlp/twitter-roberta-base-{task}"
 
@@ -60,18 +60,19 @@ class RobertaBaseFinetuned(Model):
         self.model = AutoModelForSequenceClassification.from_pretrained(MODEL).to(self.device)
         #self.model.save_pretrained(MODEL)
 
-        self.parameters = {'train_test_ratio': 0.1}
+        self.config = config
     
     """
     Since we are performing zero-shot, no training is required.
     """
-    def train(self, train_dataset: Dataset):
-        training_args = TrainingArguments(output_dir="test_trainer", evaluation_strategy="epoch")
+    def train(self, train_dataset: Dataset, log_callback):
+        # Don't pin memory to avoid error message
+        training_args = TrainingArguments(output_dir="test_trainer", evaluation_strategy="steps", dataloader_pin_memory=False, eval_steps=10)
 
         metric = evaluate.load("accuracy")
 
         # Preprocess data
-        train_dataset = train_dataset.map(lambda e: self.tokenizer(e['tweet'], truncation=True, padding='longest'), batched=True)
+        train_dataset = train_dataset.map(lambda e: self.tokenizer(e['tweet'], truncation=True, padding='max_length', max_length=512), batched=True)
 
         # Rename columns to match the names in the huggingface doucmentation
         train_dataset = train_dataset.rename_column("sent", "label")
@@ -88,7 +89,7 @@ class RobertaBaseFinetuned(Model):
         train_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'], device=self.device)
 
 
-        train_dataset = train_dataset.train_test_split(test_size=self.parameters['train_test_ratio'])
+        train_dataset = train_dataset.train_test_split(test_size=self.config['train_test_ratio'])
 
 
         # Callback to compute metrics for hugginface Trainer class
@@ -96,13 +97,22 @@ class RobertaBaseFinetuned(Model):
             logits, labels = eval_pred
             predictions = np.argmax(logits, axis=-1)
             return metric.compute(predictions=predictions, references=labels)
+        
 
+        # Callback for logs, passing it onto wandb
+        class EvalCallback(TrainerCallback):
+            def on_eval(self, args, state, control, metrics=None, **kwargs):
+                if state.is_local_process_zero:
+                    log_callback(metrics)
+
+        # Without pin_memory=False, there will be an error
         trainer = Trainer(
             model=self.model,
             args=training_args,
             train_dataset=train_dataset["train"],
             eval_dataset=train_dataset["test"],
             compute_metrics=compute_metrics,
+            callbacks=[EvalCallback()]
         )
 
         trainer.train()

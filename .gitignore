@@ -3,6 +3,12 @@
 data/twitter-datasets.zip
 data/twitter-datasets/*
 
+wandb
+wandb/**
+
+output_file
+output_error
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
