@@ -17,20 +17,22 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 MODEL = "roberta-finetuned"
+USE_WANDB = True
 
+if USE_WANDB:
 
+  # 1. Start a W&B Run
+  run = wandb.init(
+    project="cil-sentiment",
+    notes="My first experiment",
+    tags=["test"]
+  )
 
-# 1. Start a W&B Run
-run = wandb.init(
-  project="cil-sentiment",
-  notes="My first experiment",
-  tags=["test"]
-)
+  # 2. Capture a dictionary of hyperparameters
+  wandb.config = {
+    "train_test_ratio": 0.001
+  }
 
-# 2. Capture a dictionary of hyperparameters
-wandb.config = {
-  "train_test_ratio": 0.001
-}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
