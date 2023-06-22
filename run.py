@@ -16,7 +16,7 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "roberta-finetuned"
+MODEL = "roberta-zero_shot"
 USE_WANDB = True
 
 if USE_WANDB:
@@ -24,8 +24,8 @@ if USE_WANDB:
   # 1. Start a W&B Run
   run = wandb.init(
     project="cil-sentiment",
-    notes="My first experiment",
-    tags=["test"]
+    notes="roberta_tweet-zero_shot"
+    #tags=["test"]
   )
 
   # 2. Capture a dictionary of hyperparameters
@@ -44,11 +44,17 @@ if MODEL == "roberta-zero_shot":
     # For inference, no batching required.
     loader = DataLoader(data, batch_size=None)
 
-    accuracy = model.evaluate(loader)
+    accuracy, confusion_matrix = model.evaluate(loader)
     print("Accuracy of zero-shot classification: {}".format(accuracy))
+    wandb.run.summary["accuracy"] = accuracy
+    wandb.run.summary["confusion_matrix"] = confusion_matrix
 
-    #results = model.predict(loader)
-    #ResultData(results).store("twitterbert-pretrained")
+    test_data = TweetData("test")
+    loader = DataLoader(test_data, batch_size=None)
+
+
+    results = model.predict(loader)
+    ResultData(results).store("twitterbert-pretrained")
 
 elif MODEL == "roberta-finetuned":
 

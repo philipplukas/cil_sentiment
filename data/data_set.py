@@ -126,7 +126,7 @@ class TweetData(Dataset):
 
         data_element = self.pd_table.iloc[index]
         if self.test_mode:        
-            return {'id': data_element['id'], 'tweet': data_element['tweet']}
+            return {'id': int(data_element.name), 'tweet': data_element['tweet']}
         
         # Training data in this case
         else:

@@ -17,6 +17,8 @@ from torch.utils.data import DataLoader
 from typing import List, Tuple
 import logging
 
+from sklearn.metrics import confusion_matrix
+
 class RobertaBaseSentiment(Model):
 
     # Preprocess text (username and link placeholders)
@@ -36,12 +38,13 @@ class RobertaBaseSentiment(Model):
     # emoji, emotion, hate, irony, offensive, sentiment
     # stance/abortion, stance/atheism, stance/climate, stance/feminist, stance/hillary
 
-    def __init__(self, device='cpu'):
+    def __init__(self, config, device='cpu'):
         task='sentiment'
         MODEL = f"cardiffnlp/twitter-roberta-base-{task}"
 
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL)
         self.device = device
+        self.config = config
 
         # download label mapping
         # self.labels=[]
@@ -68,6 +71,9 @@ class RobertaBaseSentiment(Model):
         correct = 0
         total = 0
 
+        y_true = []
+        y_pred = []
+
         for idx, data_point in enumerate(test_data):
             text = data_point["tweet"]
 
@@ -80,7 +86,7 @@ class RobertaBaseSentiment(Model):
 
             encoded_input = self.tokenizer(text, return_tensors='pt').to(self.device)
             output = self.model(**encoded_input)
-            scores = output[0][0].detach().numpy()
+            scores = output[0][0].detach().to('cpu').numpy()
             scores = softmax(scores)
 
             # More negative than positive, excluding neutral as an option
@@ -92,6 +98,9 @@ class RobertaBaseSentiment(Model):
             if predicted_sent == data_point["sent"]:
                 correct += 1
 
+            y_true.append(data_point["sent"])
+            y_pred.append(predicted_sent)
+
             total += 1
 
             #ranking = np.argsort(scores)
@@ -101,7 +110,8 @@ class RobertaBaseSentiment(Model):
             #    s = scores[ranking[i]]
             #    print(f"{i+1}) {l} {np.round(float(s), 4)}")
 
-        return correct/total
+
+        return correct/total, confusion_matrix(y_true, y_pred)
     
     def predict(self, test_data: DataLoader) -> List[int]:
 
@@ -119,9 +129,9 @@ class RobertaBaseSentiment(Model):
                 logging.warning("'{}' Couldn't be preprocssed and will be ignored".format(data_point["tweet"]))
                 continue
 
-            encoded_input = self.tokenizer(text, return_tensors='pt')
+            encoded_input = self.tokenizer(text, return_tensors='pt').to(self.device)
             output = self.model(**encoded_input)
-            scores = output[0][0].detach().numpy()
+            scores = output[0][0].detach().to('cpu').numpy()
             scores = softmax(scores)
 
             # More negative than positive, excluding neutral as an option
