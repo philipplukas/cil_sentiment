@@ -152,7 +152,7 @@ class ResultData():
     def store(self, result_name: str, time_suffix: bool = True):
         
         if time_suffix:
-            suffix = strftime("%m-%d_%H:%M:%S")
+            suffix = strftime("%m-%d_%H-%M-%S")
             result_name += "_" + suffix
 
         result_name += ".csv"
