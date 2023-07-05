@@ -9,6 +9,8 @@ wandb/**
 output_file
 output_error
 
+data/results/**
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
