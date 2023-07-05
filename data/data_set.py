@@ -21,6 +21,7 @@ SPLIT_NAMES = {
     "train_sample": {"pos": "train_pos.txt", "neg": "train_neg.txt"},
     "debug": {"test": "debug_data.txt"},
     "debug_train": {"pos": "debug_pos.txt", "neg": "debug_neg.txt"},
+    "eval_train": {"pos": "train_pos_eval.txt", "neg": "train_neg_eval.txt"}
 }
 DELIMITER = " "
 
@@ -143,12 +144,15 @@ class ResultData():
         # Therefore we custom generate the indices here.
 
 
-        self.index = [idx+1 for idx in self.index]
+        # self.index = [idx+1 for idx in self.index]
 
         self.table = pd.DataFrame({"Id": self.index, "Prediction":self.sentiments}).set_index("Id")
 
 
 
+    """
+    Returns path to new file
+    """
     def store(self, result_name: str, time_suffix: bool = True):
         
         if time_suffix:
@@ -160,3 +164,5 @@ class ResultData():
 
         full_path = os.path.join(RESULTS_BASE, result_name)
         self.table.to_csv(full_path)
+
+        return full_path

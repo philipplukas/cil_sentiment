@@ -4,7 +4,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --output=output_file
 #SBATCH --error=output_error
-#SBATCH --mem-per-cpu=16G
+#SBATCH --mem-per-cpu=30G
 #SBATCH --time=01:00:00
 #SBATCH -e output_error
 

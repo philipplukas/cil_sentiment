@@ -19,7 +19,7 @@ import logging
 
 from sklearn.metrics import confusion_matrix
 
-class RobertaBaseSentiment(Model):
+class RobertaBaseTweetSentiment(Model):
 
     # Preprocess text (username and link placeholders)
     def preprocess(self, text):
@@ -37,6 +37,11 @@ class RobertaBaseSentiment(Model):
     # Tasks:
     # emoji, emotion, hate, irony, offensive, sentiment
     # stance/abortion, stance/atheism, stance/climate, stance/feminist, stance/hillary
+
+    def label_to_idx(self, label: str): 
+        translate_labels = { "negative": 0, "positive": 2 }
+        return translate_labels[label]
+    
 
     def __init__(self, config, device='cpu'):
         task='sentiment'
@@ -75,6 +80,11 @@ class RobertaBaseSentiment(Model):
         y_pred = []
 
         for idx, data_point in enumerate(test_data):
+
+            if (idx % 1000 == 0):
+                logging.info("Step {}".format(idx))
+
+
             text = data_point["tweet"]
 
             try:
@@ -90,7 +100,7 @@ class RobertaBaseSentiment(Model):
             scores = softmax(scores)
 
             # More negative than positive, excluding neutral as an option
-            if scores[0] > scores[2]:
+            if scores[self.label_to_idx("negative")] > scores[self.label_to_idx("positive")]:
                 predicted_sent = -1
             else:
                 predicted_sent = 1
@@ -120,6 +130,9 @@ class RobertaBaseSentiment(Model):
 
         for idx, data_point in enumerate(test_data):
 
+            if (idx % 1000 == 0):
+                logging.info("Step {}".format(idx))
+
             text = data_point["tweet"]
 
             try:
@@ -135,7 +148,7 @@ class RobertaBaseSentiment(Model):
             scores = softmax(scores)
 
             # More negative than positive, excluding neutral as an option
-            if scores[0] > scores[2]:
+            if scores[self.label_to_idx("negative")] > scores[self.label_to_idx("positive")]:
                 predicted_sent = -1
             else:
                 predicted_sent = 1
@@ -144,3 +157,32 @@ class RobertaBaseSentiment(Model):
             results.append((data_point["id"], predicted_sent))
         
         return results
+    
+
+class RobertaBaseSentiment(RobertaBaseTweetSentiment):
+
+    def __init__(self, config, device='cpu'):
+        super().__init__(config, device)
+
+        task='sentiment'
+        MODEL = f"siebert/sentiment-roberta-large-english"
+
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        self.device = device
+        self.config = config
+
+        # download label mapping
+        # self.labels=[]
+        # mapping_link = f"https://raw.githubusercontent.com/cardiffnlp/tweeteval/main/datasets/{task}/mapping.txt"
+        # with urllib.request.urlopen(mapping_link) as f:
+        #     html = f.read().decode('utf-8').split("\n")
+        #    csvreader = csv.reader(html, delimiter='\t')
+        # self.labels = [row[1] for row in csvreader if len(row) > 1]
+
+        # PT
+        self.model = AutoModelForSequenceClassification.from_pretrained(MODEL).to(self.device)
+        #self.model.save_pretrained(MODEL)
+
+    def label_to_idx(self, label: str): 
+        translate_labels = { "negative": 0, "positive": 1 }
+        return translate_labels[label]
