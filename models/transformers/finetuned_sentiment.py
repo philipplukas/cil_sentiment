@@ -73,7 +73,7 @@ class RobertaBaseTweetFinetuned(Model):
     """
     def train(self, train_dataset: Dataset, log_callback):
         # Don't pin memory to avoid error message
-        training_args = TrainingArguments(output_dir="test_trainer", evaluation_strategy="steps", dataloader_pin_memory=False, eval_steps=10, load_best_model_at_end=True, per_device_train_batch_size=1, gradient_accumulation_steps=8)
+        training_args = TrainingArguments(output_dir="test_trainer", evaluation_strategy="steps", dataloader_pin_memory=False, eval_steps=5, load_best_model_at_end=True, per_device_train_batch_size=1, gradient_accumulation_steps=8, max_steps=200)
 
         metric = evaluate.load("accuracy")
 
@@ -92,7 +92,7 @@ class RobertaBaseTweetFinetuned(Model):
 
     
         # Change to tensors and put them on the appropriate device
-        train_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'])
+        train_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'], device=self.device)
 
 
         train_dataset = train_dataset.train_test_split(test_size=self.config['train_test_ratio'])
@@ -190,9 +190,9 @@ class RobertaBaseTweetFinetuned(Model):
                 logging.warning("'{}' Couldn't be preprocssed and will be ignored".format(data_point["tweet"]))
                 continue
 
-            encoded_input = self.tokenizer(text, return_tensors='pt')
+            encoded_input = self.tokenizer(text, return_tensors='pt').to(device=self.device)
             output = self.model(**encoded_input)
-            scores = output[0][0].detach().numpy()
+            scores = output[0][0].detach().to(device="cpu").numpy()
             scores = softmax(scores)
 
             # More negative than positive, excluding neutral as an option

@@ -17,7 +17,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 MODEL = "roberta-finetuned"
-PRETRAINED_ON_TWEETS = False
+PRETRAINED_ON_TWEETS = True
 USE_WANDB = True
 
 if USE_WANDB:
@@ -27,7 +27,7 @@ if USE_WANDB:
   # 1. Start a W&B Run
   run = wandb.init(
     project="cil-sentiment",
-    notes="roberta-zero_shot"
+    notes=MODEL
     #tags=["test"]
   )
 
@@ -65,7 +65,7 @@ if MODEL == "roberta-zero_shot":
     results = model.predict(loader)
     logging.info("Finished prediction step")
 
-    ResultData(results).store("roberta-pretrained")
+    ResultData(results).store("tweetbert-pretrained")
 
     #results_artifact = wandb.Artifact('pretrained_results', type='result_file')
     #results_artifact.add_file(file_path)
@@ -75,7 +75,7 @@ if MODEL == "roberta-zero_shot":
 
 elif MODEL == "roberta-finetuned":
 
-    data = TweetData("train_full")
+    data = TweetData("train_sample")
 
     if PRETRAINED_ON_TWEETS:
       model = RobertaBaseTweetFinetuned(wandb.config, device)
@@ -98,7 +98,7 @@ elif MODEL == "roberta-finetuned":
     results = model.predict(loader)
     logging.info("Finished prediction step")
  
-    ResultData(results).store("roberta-finetuned")
+    ResultData(results).store("tweetbert-finetuned")
 
     #accuracy = model.evaluate(loader)
     #print("Accuracy of zero-shot classification: {}".format(accuracy))

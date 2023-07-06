@@ -21,7 +21,7 @@ SPLIT_NAMES = {
     "train_sample": {"pos": "train_pos.txt", "neg": "train_neg.txt"},
     "debug": {"test": "debug_data.txt"},
     "debug_train": {"pos": "debug_pos.txt", "neg": "debug_neg.txt"},
-    "eval_train": {"pos": "train_pos_eval.txt", "neg": "train_neg_eval.txt"}
+    "eval_train": {"pos": "train_pos_eval.txt", "neg": "train_neg_evalgit.txt"}
 }
 DELIMITER = " "
 
@@ -156,7 +156,7 @@ class ResultData():
     def store(self, result_name: str, time_suffix: bool = True):
         
         if time_suffix:
-            suffix = strftime("%m-%d_%H:%M:%S")
+            suffix = strftime("%m-%d_%H-%M-%S")
             result_name += "_" + suffix
 
         result_name += ".csv"
