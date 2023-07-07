@@ -120,9 +120,11 @@ class TweetData(Dataset):
         return self.pd_table.shape[0]
     
 
-    def __getitem__(self, index: int) -> dict:
+    def __getitem__(self, index: int | List[int]) -> dict:
 
-        if index >= len(self):
+        index = [index] if index is int else index
+
+        if any(i >= len(self) for i in index):
             raise IndexError
 
         data_element = self.pd_table.iloc[index]

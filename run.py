@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from data.data_set import TweetData, ResultData
+from models.bag_of_words_model import BagOfWords
 from models.transformers.pretrained_sentiment import RobertaBaseTweetSentiment, RobertaBaseSentiment
 from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, RobertaBaseFinetuned
 from torch.utils.data import DataLoader
@@ -19,9 +20,9 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "roberta-finetuned"
+MODEL = "bag-of-words"
 PRETRAINED_ON_TWEETS = True
-USE_WANDB = True
+USE_WANDB = False
 
 if USE_WANDB:
 
@@ -109,3 +110,10 @@ elif MODEL == "roberta-finetuned":
 
     #accuracy = model.evaluate(loader)
     #print("Accuracy of zero-shot classification: {}".format(accuracy))
+
+elif MODEL == "bag-of-words":
+
+    data = TweetData("train_sample")
+    model = BagOfWords()
+    accuracy = model.cross_validate(data)
+    print(f"Accuracy: {accuracy*100:.2F}%")
