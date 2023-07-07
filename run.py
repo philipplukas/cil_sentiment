@@ -3,8 +3,8 @@ import random
 import numpy as np
 
 from data.data_set import TweetData, ResultData
-from models.transformers.pretrained_sentiment import RobertaBaseSentiment
-from models.transformers.finetuned_sentiment import RobertaBaseFinetuned
+from models.transformers.pretrained_sentiment import RobertaBaseTweetSentiment, RobertaBaseSentiment
+from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, RobertaBaseFinetuned
 from torch.utils.data import DataLoader
 
 import torch
@@ -15,19 +15,22 @@ import wandb
 
 from datasets import Dataset
 
-# For now, log all levels
+# Logg info level as well
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "roberta-zero_shot"
+MODEL = "roberta-finetuned"
+PRETRAINED_ON_TWEETS = True
 USE_WANDB = True
 
 if USE_WANDB:
 
+  wandb.login()
+
   # 1. Start a W&B Run
   run = wandb.init(
     project="cil-sentiment",
-    notes="roberta_tweet-zero_shot"
+    notes=MODEL
     #tags=["test"]
   )
 
@@ -44,10 +47,15 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
+
 if MODEL == "roberta-zero_shot":
 
-    data = TweetData("debug_train")
-    model = RobertaBaseSentiment(wandb.config, device)
+    data = TweetData("eval_train")
+
+    if PRETRAINED_ON_TWEETS:
+      model = RobertaBaseTweetSentiment(wandb.config, device)
+    else:
+      model = RobertaBaseSentiment(wandb.config, device)
 
     # For inference, no batching required.
     loader = DataLoader(data, batch_size=None)
@@ -60,14 +68,27 @@ if MODEL == "roberta-zero_shot":
     test_data = TweetData("test")
     loader = DataLoader(test_data, batch_size=None)
 
-
+    logging.info("Start prediction on test dataset")
     results = model.predict(loader)
-    ResultData(results).store("twitterbert-pretrained")
+    logging.info("Finished prediction step")
+
+    ResultData(results).store("tweetbert-pretrained")
+
+    #results_artifact = wandb.Artifact('pretrained_results', type='result_file')
+    #results_artifact.add_file(file_path)
+
+    #logging.info("log artifact")
+    #wandb.log_artifact(results_artifact)
 
 elif MODEL == "roberta-finetuned":
 
     data = TweetData("train_sample")
-    model = RobertaBaseFinetuned(wandb.config, device)
+
+    if PRETRAINED_ON_TWEETS:
+      model = RobertaBaseTweetFinetuned(wandb.config, device)
+    else:
+      model = RobertaBaseFinetuned(wandb.config, device)
+       
 
     # Turn it into a huggingface dataset object to access more powerful data manipulation methods.
     dataset = Dataset.from_list(data)
@@ -77,6 +98,14 @@ elif MODEL == "roberta-finetuned":
 
     # For inference, no batching required.
     # loader = DataLoader(data, batch_size=None)
+    test_data = TweetData("test")
+    loader = DataLoader(test_data, batch_size=None)
+
+    logging.info("Start prediction on test dataset")
+    results = model.predict(loader)
+    logging.info("Finished prediction step")
+ 
+    ResultData(results).store("tweetbert-finetuned")
 
     #accuracy = model.evaluate(loader)
     #print("Accuracy of zero-shot classification: {}".format(accuracy))
