@@ -74,14 +74,14 @@ class RobertaBaseFinetuned(Model):
         # Preprocess data
         train_dataset = train_dataset.map(lambda e: self.tokenizer(e['tweet'], truncation=True, padding='max_length', max_length=512), batched=True)
 
-        # Rename columns to match the names in the huggingface doucmentation
+        # Rename columns to match the names in the huggingface documentation
         train_dataset = train_dataset.rename_column("sent", "label")
 
         def replace_label(e):
             mapping = {-1:0, 1:2}
             e['label'] = mapping[e['label']]
             return e
-        # Repalce labels -1,1 with model specifc labels
+        # Replace labels -1,1 with model specific labels
         train_dataset = train_dataset.map(replace_label, batched=False)
 
     
@@ -92,7 +92,7 @@ class RobertaBaseFinetuned(Model):
         train_dataset = train_dataset.train_test_split(test_size=self.config['train_test_ratio'])
 
 
-        # Callback to compute metrics for hugginface Trainer class
+        # Callback to compute metrics for huggingface Trainer class
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
             predictions = np.argmax(logits, axis=-1)

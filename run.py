@@ -1,3 +1,6 @@
+import random
+
+import numpy as np
 
 from data.data_set import TweetData, ResultData
 from models.transformers.pretrained_sentiment import RobertaBaseSentiment
@@ -33,8 +36,13 @@ if USE_WANDB:
     "train_test_ratio": 0.001
   }
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Ensure consistent seed for reproducibility.
+SEED = 0
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
 if MODEL == "roberta-zero_shot":
 
