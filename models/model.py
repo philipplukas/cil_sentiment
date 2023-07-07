@@ -53,8 +53,8 @@ class Model(ABC):
         """
         Evaluate the model using k-fold cross-validation.
         @param data: The data used for model training and validation.
-        @param k: The number of times to train the model on different data (default: 5).
-        @param p: The portion of data points reserved for the validation set (default: 0.1).
+        @param k: The number of times to train the model on different data.
+        @param p: The portion of data points reserved for the validation set.
         @return: The validation accuracy of the model.
         """
         # Average the results from k calls to train_and_evaluate,
@@ -66,7 +66,7 @@ def partition_dataset(data: DataLoader, p: float = 0.1) -> (DataLoader, DataLoad
     """
     Partition a dataset into two parts at random.
     @param data: The data to partition.
-    @param p: The portion of data points reserved for the validation set (default: 0.1).
+    @param p: The portion of data points reserved for the validation set.
     @return: A tuple of the training and validation sets respectively.
     """
     test_ids = np.random.randint(0, len(data), int(p * len(data)))
