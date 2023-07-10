@@ -122,7 +122,7 @@ class TweetData(Dataset):
 
     def __getitem__(self, index: int | List[int]) -> dict:
 
-        index = [index] if index is int else index
+        index = [index] if isinstance(index, int) else index
 
         if any(i >= len(self) for i in index):
             raise IndexError

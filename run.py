@@ -7,6 +7,7 @@ from models.bag_of_words_model import BagOfWords
 from models.transformers.pretrained_sentiment import RobertaBaseTweetSentiment, RobertaBaseSentiment
 from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, RobertaBaseFinetuned
 from torch.utils.data import DataLoader
+import nltk
 
 import torch
 import logging
@@ -16,7 +17,7 @@ import wandb
 
 from datasets import Dataset
 
-# Logg info level as well
+# Log info level as well
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -47,6 +48,8 @@ SEED = 0
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
+
+nltk.download('wordnet')
 
 
 if MODEL == "roberta-zero_shot":

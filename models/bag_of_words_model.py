@@ -1,7 +1,7 @@
 from typing import List
 
 from torch.utils.data import DataLoader
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 
 from .model import Model
