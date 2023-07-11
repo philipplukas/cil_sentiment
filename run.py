@@ -4,6 +4,7 @@ import numpy as np
 
 from data.data_set import TweetData, ResultData
 from models.bag_of_words_model import BagOfWords
+from models.convolution_model import ConvolutionModel
 from models.transformers.pretrained_sentiment import RobertaBaseTweetSentiment, RobertaBaseSentiment
 from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, RobertaBaseFinetuned
 from torch.utils.data import DataLoader
@@ -21,7 +22,7 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "bag-of-words"
+MODEL = "convolution"
 PRETRAINED_ON_TWEETS = True
 USE_WANDB = False
 
@@ -41,7 +42,7 @@ if USE_WANDB:
     "train_test_ratio": 0.001
   }
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Ensure consistent seed for reproducibility.
 SEED = 0
@@ -120,3 +121,10 @@ elif MODEL == "bag-of-words":
     model = BagOfWords()
     accuracy = model.cross_validate(data)
     print(f"Accuracy: {accuracy*100:.2F}%")
+
+elif MODEL == "convolution":
+
+    data = TweetData("train_sample")
+    model = ConvolutionModel(device)
+    model.train(data[range(len(data))])
+    #print(f"Accuracy: {accuracy * 100:.2F}%")

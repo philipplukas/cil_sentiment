@@ -1,5 +1,3 @@
-from typing import List
-
 from torch.utils.data import DataLoader
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
@@ -16,9 +14,9 @@ class BagOfWords(Model):
             .fit(counts, data['sent'])
 
     def evaluate(self, data: DataLoader) -> float:
-        y = self.predict(data)
-        return len([y for y0, y1 in zip(data['sent'], y) if y0 == y1]) / len(y)
+        Y = self.predict(data)
+        return len([0 for y0, y1 in zip(data['sent'], Y) if y0 == y1]) / len(Y)
 
-    def predict(self, data: DataLoader) -> List[int]:
+    def predict(self, data: DataLoader) -> list[int]:
         counts = self.cv.transform(data['tweet'])
         return self.clf.predict(counts)
