@@ -8,11 +8,21 @@ from .model import Model
 from .word_embedder import WordEmbedder
 
 class CNN(nn.Module):
+    """
+    A PyTorch neural network architecture intended for use in sentiment classification.
+    Features a single 1D convolution layer followed by two fully connected layers.
+    """
 
+    # The length of kernel used in the convolution layer.
     kernel_size = 6
+    # The number of unique filters produced by the convolution layer.
     num_filters = 32
 
     def __init__(self, embed_dim: int, max_words: int):
+        """
+        @param embed_dim: The dimensionality of the word embeddings.
+        @param max_words: The (padded) number of words in each sentence.
+        """
         super().__init__()
         self.embed_dim = embed_dim
         self.max_words = max_words
@@ -24,20 +34,25 @@ class CNN(nn.Module):
             dtype=torch.float64
         )
 
-        self.fc1_dim_in = (self.max_words - self.kernel_size + 1) * self.num_filters
-        fc1_dim_out = 100
+        # Calculate the dimensionality of the first fully-connected hidden layer.
+        self.fc_dim = (self.max_words - self.kernel_size + 1) * self.num_filters
 
-        self.fc1 = nn.Linear(self.fc1_dim_in, fc1_dim_out, dtype=torch.float64)
-        self.fc2 = nn.Linear(fc1_dim_out, 1, dtype=torch.float64)
+        self.fc1 = nn.Linear(self.fc_dim, 100, dtype=torch.float64)
+        self.fc2 = nn.Linear(100, 1, dtype=torch.float64)
 
     def forward(self, x):
         x = F.leaky_relu(self.conv1(x))
-        x = x.view(-1, self.fc1_dim_in)
+        # Flatten results from all filters into a single vector.
+        x = x.view(-1, self.fc_dim)
         x = F.leaky_relu(self.fc1(x))
-        x = F.sigmoid(self.fc2(x)) * 2 - 1
+        x = F.tanh(self.fc2(x))
         return x
 
 class ConvolutionModel(Model):
+    """
+    A model for classifying the sentiment (positive/negative) of a Tweet.
+    Uses ADAM to train a neural network featuring a convolution layer.
+    """
 
     def __init__(self, device: str = 'cpu'):
         self.embedder = WordEmbedder('data/embeddings/glove.twitter.27B.200d.txt')
@@ -45,11 +60,18 @@ class ConvolutionModel(Model):
         self.network = None
         self.max_words = 64
 
-    def train(self, data: DataLoader, iterations=10000, batch_size=200, lr=1e-3):
+    def train(self, data: DataLoader, iterations=100000, batch_size=100, lr=5e-4):
+        """
+        @param data: The labelled training data for training the network.
+        @param iterations: The total number of iterations (not number of epochs).
+        @param batch_size: The number of training examples used in each iteration.
+        @param lr: The learning rate at which the NN is trained.
+        """
 
         X = np.array(data['tweet'])
         Y = np.array(data['sent'])
 
+        # Reset the network from scratch for each attempt to retrain.
         self.network = CNN(self.embedder.dimension, self.max_words)
 
         self.network.train()
@@ -58,35 +80,57 @@ class ConvolutionModel(Model):
         print(f'Training on device: {self.device}.')
 
         optimiser = torch.optim.Adam(self.network.parameters(), lr=lr, weight_decay=1e-7)
-        bce = nn.BCELoss()
 
         for i in range(iterations):
-
-            samples = torch.randint(len(X), (batch_size,))
-            embedded = self.embedder.embed_dataset((X[samples]), self.max_words)
-            x = torch.from_numpy(np.array(embedded)).to(self.device)
-            y = torch.from_numpy(Y[samples]).to(self.device)
-
-            optimiser.zero_grad()
-            result = torch.flatten(self.network(x))
-
-            loss = bce(
-                torch.clamp(((result + 1.0) / 2.0), 0.0, 1.0).double(),
-                torch.clamp((y + 1.0) / 2.0, 0.0, 1.0).double()
-            )
-
-            loss.backward()
-            optimiser.step()
-
+            loss = self.step(X, Y, batch_size, optimiser)
             print(f'Iteration: {i}/{iterations}, Cross-entropy training loss: {loss}.')
+
+    def step(self, X, Y, batch_size, optimiser):
+        """
+        Perform a single step of stochastic gradient descent.
+        @param X: The entire set of sentences used for training.
+        @param Y: The corresponding labels for X.
+        @param batch_size: The number of training examples used in each iteration.
+        @param optimiser: The gradient-descent-based PyTorch optimiser.
+        """
+
+        # Select a random subset of the data for this iteration.
+        samples = torch.randint(len(X), (batch_size,))
+
+        # Embed this subset of the data into a latent space.
+        embedded = self.embedder.embed_dataset((X[samples]), self.max_words)
+
+        # Load training examples on the GPU.
+        x = torch.from_numpy(np.array(embedded)).to(self.device)
+        y = torch.from_numpy(Y[samples]).to(self.device)
+
+        # Perform the forward pass.
+        optimiser.zero_grad()
+        result = torch.flatten(self.network(x))
+
+        # Calculate binary cross-entropy loss between predictions and the actual categories.
+        loss = nn.BCELoss()(
+            # Rescale values to be between 0 and 1 (instead of -1 and 1).
+            # This is required by PyTorch's inbuilt BCELoss function.
+            torch.clamp(((result + 1.0) / 2.0), 0.0, 1.0).double(),
+            torch.clamp((y + 1.0) / 2.0, 0.0, 1.0).double()
+        )
+
+        # Perform the backward pass.
+        loss.backward()
+        optimiser.step()
+
+        return loss
 
     def predict(self, data: DataLoader) -> list[int]:
 
         self.network.eval()
         self.network.to('cpu')
 
+        # Embed the sentences into a latent space.
         embedded = self.embedder.embed_dataset(data['tweet'], self.max_words)
         X = torch.from_numpy(np.array(embedded))
+        # Use the trained NN to make sentiment predictions.
         Y = torch.flatten(self.network(X)).detach().numpy()
-
+        # Use only the sign of the output to make categorical predictions.
         return [np.sign(y) for y in Y]
