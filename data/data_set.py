@@ -48,7 +48,7 @@ def parse_tweets(file_path: str) -> List[str]:
 
     tweets: List[str] = []
 
-    with open(file_path) as fp:
+    with open(file_path, encoding='utf-8') as fp:
         for line in fp.readlines():
             line = line.rstrip()
 

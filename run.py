@@ -45,12 +45,10 @@ if USE_WANDB:
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Ensure consistent seed for reproducibility.
-SEED = 0
+SEED = 1
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
-
-nltk.download('wordnet')
 
 
 if MODEL == "roberta-zero_shot":
@@ -124,7 +122,7 @@ elif MODEL == "bag-of-words":
 
 elif MODEL == "convolution":
 
-    data = TweetData("train_sample")
+    data = TweetData("train_full")
     model = ConvolutionModel(device)
-    model.train(data[range(len(data))])
-    #print(f"Accuracy: {accuracy * 100:.2F}%")
+    accuracy = model.train_and_evaluate(data)
+    print(f"Accuracy: {accuracy * 100:.2F}%")

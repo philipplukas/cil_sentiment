@@ -22,9 +22,9 @@ class Model(ABC):
     return accuracy as result, 
     Logging of intermediate results as side effect.
     """
-    @abstractmethod
-    def evaluate(self, test_data: DataLoader) -> float:
-        pass
+    def evaluate(self, data: DataLoader) -> float:
+        Y = self.predict(data)
+        return len([Y for y0, y1 in zip(data['sent'], Y) if y0 * y1 > 0]) / len(Y)
 
     """ 
     Predicting sentiment, 
@@ -35,7 +35,7 @@ class Model(ABC):
         pass
 
     @final
-    def train_and_evaluate(self, data: DataLoader, p: float = 0.1) -> float:
+    def train_and_evaluate(self, data: DataLoader, p: float = 0.05) -> float:
         """
         Train the model based on a portion of the given dataset,
         reserving another portion for subsequent testing.
@@ -49,7 +49,7 @@ class Model(ABC):
 
 
     @final
-    def cross_validate(self, data: DataLoader, k: int = 5, p: float = 0.1) -> float:
+    def cross_validate(self, data: DataLoader, k: int = 5, p: float = 0.05) -> float:
         """
         Evaluate the model using k-fold cross-validation.
         @param data: The data used for model training and validation.

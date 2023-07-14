@@ -13,10 +13,6 @@ class BagOfWords(Model):
         self.clf = SGDClassifier(loss='hinge')\
             .fit(counts, data['sent'])
 
-    def evaluate(self, data: DataLoader) -> float:
-        Y = self.predict(data)
-        return len([0 for y0, y1 in zip(data['sent'], Y) if y0 == y1]) / len(Y)
-
     def predict(self, data: DataLoader) -> list[int]:
         counts = self.cv.transform(data['tweet'])
         return self.clf.predict(counts)
