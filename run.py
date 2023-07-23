@@ -125,4 +125,5 @@ elif MODEL == "convolution":
     data = TweetData("train_full")
     model = ConvolutionModel(device)
     accuracy = model.train_and_evaluate(data)
+    model.save("data/cnn_weights.pt")
     print(f"Accuracy: {accuracy * 100:.2F}%")

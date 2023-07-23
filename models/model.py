@@ -34,6 +34,22 @@ class Model(ABC):
     def predict(self, test_data: DataLoader) -> List[int]:
         pass
 
+    """
+    Save the current state of the model to a file.
+    Used when the model needs to be reused in a separate runtime without retraining.
+    @param file: The name of the file to save the model weights to.
+    """
+    def save(self, file: str):
+        pass
+
+    """
+    Load a previous state of the model from a file.
+    Used when the model needs to be reused in a separate runtime without retraining.
+    @param file: The name of the file to load the model weights from.
+    """
+    def load(self, file: str):
+        pass
+
     @final
     def train_and_evaluate(self, data: DataLoader, p: float = 0.05) -> float:
         """

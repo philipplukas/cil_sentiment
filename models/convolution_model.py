@@ -60,7 +60,7 @@ class ConvolutionModel(Model):
         self.network = None
         self.max_words = 64
 
-    def train(self, data: DataLoader, iterations=100000, batch_size=100, lr=5e-4):
+    def train(self, data: DataLoader, iterations=200000, batch_size=50, lr=1e-3):
         """
         @param data: The labelled training data for training the network.
         @param iterations: The total number of iterations (not number of epochs).
@@ -134,3 +134,10 @@ class ConvolutionModel(Model):
         Y = torch.flatten(self.network(X)).detach().numpy()
         # Use only the sign of the output to make categorical predictions.
         return [np.sign(y) for y in Y]
+
+    def save(self, file: str):
+        torch.save(self.network.state_dict(), file)
+
+    def load(self, file: str):
+        self.network = CNN(self.embedder.dimension, self.max_words)
+        self.network.load_state_dict(torch.load(file))
