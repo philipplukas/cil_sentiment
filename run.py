@@ -22,9 +22,9 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "judge"
+MODEL = "roberta-finetuned"
 PRETRAINED_ON_TWEETS = True
-USE_WANDB = False
+USE_WANDB = True
 
 if USE_WANDB:
 
@@ -112,6 +112,7 @@ elif MODEL == "roberta-finetuned":
 
     #accuracy = model.evaluate(loader)
     #print("Accuracy of zero-shot classification: {}".format(accuracy))
+    model.save("./data/models/tweetbert-finetuned.save")
 
 elif MODEL == "bag-of-words":
 
@@ -122,7 +123,7 @@ elif MODEL == "bag-of-words":
 
 elif MODEL == "convolution":
 
-    data = TweetData("train_full")
+    data = TweetData("train_full", convolution_mode=True)
     model = ConvolutionModel(device)
     accuracy = model.train_and_evaluate(data)
     model.save("data/cnn_weights.pt")

@@ -47,6 +47,8 @@ class RobertaBaseTweetFinetuned(Model):
         task='sentiment'
         MODEL = f"cardiffnlp/twitter-roberta-base-{task}"
 
+        self.model = MODEL
+
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL)
         self.device = device
 
@@ -206,6 +208,8 @@ class RobertaBaseTweetFinetuned(Model):
         
         return results
     
+    def save(self, file_path: str):
+        self.model.save_pretrained(file_path)
 
 class RobertaBaseFinetuned(RobertaBaseTweetFinetuned):
 
@@ -214,6 +218,7 @@ class RobertaBaseFinetuned(RobertaBaseTweetFinetuned):
 
         task='sentiment'
         MODEL = f"siebert/sentiment-roberta-large-english"
+        self.model = MODEL
 
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL)
         self.device = device
