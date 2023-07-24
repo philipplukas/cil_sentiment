@@ -22,7 +22,7 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "convolution"
+MODEL = "judge"
 PRETRAINED_ON_TWEETS = True
 USE_WANDB = False
 
@@ -127,3 +127,11 @@ elif MODEL == "convolution":
     accuracy = model.train_and_evaluate(data)
     model.save("data/cnn_weights.pt")
     print(f"Accuracy: {accuracy * 100:.2F}%")
+
+
+elif MODEL == "judge":
+   
+  cnn_model = ConvolutionModel(device)
+  cnn_model.load('./data/models/cnn_weights.pt')
+
+  print("Succesfull with loading")

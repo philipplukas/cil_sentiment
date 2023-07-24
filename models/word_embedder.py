@@ -1,5 +1,7 @@
 import numpy as np
 
+from typing import List, Dict
+
 class WordEmbedder:
     """
     A mechanism for loading pre-generated word vectors from a file,
@@ -21,7 +23,7 @@ class WordEmbedder:
         for embedding in self.embeddings.values():
             assert len(embedding) == self.dimension
 
-    def embed_word(self, word: str) -> list[float]:
+    def embed_word(self, word: str) -> List[float]:
         """
         Embed a single word in a latent space
         If the word isn't in the dictionary, an all-zeroes vector is provided.
@@ -32,7 +34,7 @@ class WordEmbedder:
             if word.lower() in self.embeddings else\
             [0.0] * self.dimension
 
-    def embed_sentence(self, sentence: str, length: int = -1) -> list[list[float]]:
+    def embed_sentence(self, sentence: str, length: int = -1) -> List[List[float]]:
         """
         Embed an entire sentence in a latent space.
         Individual words are assumed to be separated by spaces.
@@ -52,7 +54,7 @@ class WordEmbedder:
         # Transpose the embeddings for PyTorch compatibility.
         return np.transpose(embeddings)
 
-    def embed_dataset(self, dataset: list[str], length: int = -1) -> list[list[list[float]]]:
+    def embed_dataset(self, dataset: List[str], length: int = -1) -> List[List[List[float]]]:
         """
         Embed a collection of sentences in a latent space.
         @param dataset: The collection of sentences to be embedded.
@@ -65,7 +67,7 @@ class WordEmbedder:
         # Embed each sentence in the dataset.
         return [self.embed_sentence(sentence, length) for sentence in dataset]
 
-def load_embeddings(file: str, delim: str) -> dict[list[float]]:
+def load_embeddings(file: str, delim: str) -> Dict[str, List[float]]:
     # It is necessary to specify a UTF-8 encoding because some words have special characters.
     file = open(file, 'r', encoding='utf-8')
     lines = file.read().split('\n')

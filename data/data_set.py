@@ -120,7 +120,7 @@ class TweetData(Dataset):
         return self.pd_table.shape[0]
     
 
-    def __getitem__(self, index: int | List[int]) -> dict:
+    def __getitem__(self, index: Union[int, List[int]]) -> dict:
 
         index = [index] if isinstance(index, int) else index
 

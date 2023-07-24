@@ -1,4 +1,4 @@
-from typing import List, final
+from typing import List
 from abc import ABC
 from abc import abstractmethod
 
@@ -50,7 +50,7 @@ class Model(ABC):
     def load(self, file: str):
         pass
 
-    @final
+    #@final
     def train_and_evaluate(self, data: DataLoader, p: float = 0.05) -> float:
         """
         Train the model based on a portion of the given dataset,
@@ -64,7 +64,7 @@ class Model(ABC):
         return self.evaluate(test_data)
 
 
-    @final
+    #@final
     def cross_validate(self, data: DataLoader, k: int = 5, p: float = 0.05) -> float:
         """
         Evaluate the model using k-fold cross-validation.

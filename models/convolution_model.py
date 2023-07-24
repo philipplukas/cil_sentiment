@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader
 from .model import Model
 from .word_embedder import WordEmbedder
 
+from typing import List
+
 class CNN(nn.Module):
     """
     A PyTorch neural network architecture intended for use in sentiment classification.
@@ -122,7 +124,7 @@ class ConvolutionModel(Model):
 
         return loss
 
-    def predict(self, data: DataLoader) -> list[int]:
+    def predict(self, data: DataLoader) -> List[int]:
 
         self.network.eval()
         self.network.to('cpu')
