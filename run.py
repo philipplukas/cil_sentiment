@@ -10,6 +10,8 @@ from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, R
 from torch.utils.data import DataLoader
 import nltk
 
+from transformers import AutoModelForSequenceClassification
+
 import torch
 import logging
 
@@ -22,9 +24,9 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "roberta-finetuned"
+MODEL = "judge"
 PRETRAINED_ON_TWEETS = True
-USE_WANDB = True
+USE_WANDB = False
 
 if USE_WANDB:
 
@@ -134,5 +136,8 @@ elif MODEL == "judge":
    
   cnn_model = ConvolutionModel(device)
   cnn_model.load('./data/models/cnn_weights.pt')
+
+  trans_model = RobertaBaseTweetFinetuned(wandb.config, device)
+  trans_model.load("./data/models/tweetbert-finetuned.save")
 
   print("Succesfull with loading")

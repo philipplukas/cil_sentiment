@@ -211,6 +211,9 @@ class RobertaBaseTweetFinetuned(Model):
     def save(self, file_path: str):
         self.model.save_pretrained(file_path)
 
+    def load(self, file_path: str):
+        self.model = AutoModelForSequenceClassification.from_pretrained(file_path)
+
 class RobertaBaseFinetuned(RobertaBaseTweetFinetuned):
 
     def __init__(self, config, device='cpu'):
