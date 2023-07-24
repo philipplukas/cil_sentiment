@@ -2,13 +2,15 @@ import numpy as np
 
 from typing import List, Dict
 
+from sqlitedict import SqliteDict
+
 class WordEmbedder:
     """
     A mechanism for loading pre-generated word vectors from a file,
     and using them to embed words and sentences in a latent space.
     """
 
-    def __init__(self, file: str, delim: str = ' '):
+    def __init__(self, file: str, delim: str = ' ', db_backend=True, set_up=False):
         """
         Load a set of latent word embeddings from a file.
         @param file: The name of the file to load word vectors from.
@@ -16,12 +18,22 @@ class WordEmbedder:
         """
         print(f"Loading word embeddings from {file}.")
         # Load the embedding data from a file.
-        self.embeddings = load_embeddings(file, delim)
-        # Determine the dimensionality of the embedding.
-        self.dimension = len(list(self.embeddings.values())[0])
+
+        if db_backend:
+            self.embeddings = SqliteDict("/cluster/scratch/guphilip/embeddings.sqlite")
+
+            if set_up:
+                load_embeddings_sql(file, delim, self.embeddings)
+
+        else:
+            self.embeddings = load_embeddings(file, delim)
+            # Determine the dimensionality of the embedding.
+            
+        self.dimension = len(next(self.embeddings.values()))
         # Ensure that all embeddings have the same dimensionality.
-        for embedding in self.embeddings.values():
-            assert len(embedding) == self.dimension
+        
+        #for embedding in self.embeddings.values():
+        #    assert len(embedding) == self.dimension
 
     def embed_word(self, word: str) -> List[float]:
         """
@@ -82,3 +94,30 @@ def load_embeddings(file: str, delim: str) -> Dict[str, List[float]]:
     }
     file.close()
     return embeddings
+
+def load_embeddings_sql(file: str, delim: str, embeddings_db: SqliteDict) -> Dict[str, List[float]]:
+
+    # It is necessary to specify a UTF-8 encoding because some words have special characters.
+    file = open(file, 'r', encoding='utf-8')
+    
+    #lines = file.read().split('\n')
+
+    counter = 0
+    for line in file:
+
+        if line.strip() != '':
+            token = line.split(delim)[0].lower()
+            latent_repr = [float(d) for d in line.split(delim)[1:]]
+            embeddings_db[token] = latent_repr
+
+            counter += 1
+            if counter % 100 == 0:
+                embeddings_db.commit()
+    
+    file.close()
+
+if __name__ == "__main__":
+
+    embeddings_file = "/cluster/scratch/guphilip/glove.twitter.27B.200d.txt"
+    WordEmbedder(embeddings_file, set_up=True)
+    print("Finished")
