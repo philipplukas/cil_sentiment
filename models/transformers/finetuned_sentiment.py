@@ -176,12 +176,18 @@ class RobertaBaseTweetFinetuned(Model):
 
         return correct/total, confusion_matrix(y_true, y_pred)
     
-    def predict(self, test_data: DataLoader) -> List[int]:
+    def predict(self, test_data: DataLoader, num_elem : int = None, test_mode = True) -> List[int]:
 
         # First element is index and second element sentiment
         results : List[Tuple[int, int]] = []
 
         for idx, data_point in enumerate(test_data):
+
+            if idx % 100 == 0:
+                logging.info(f"Step: {idx}")
+
+            if num_elem and idx == num_elem:
+                break 
 
             text = data_point["tweet"]
 
@@ -204,7 +210,10 @@ class RobertaBaseTweetFinetuned(Model):
                 predicted_sent = 1
 
 
-            results.append((data_point["id"], predicted_sent))
+            if test_mode:
+                results.append((data_point["id"], predicted_sent))
+            else:
+                results.append(predicted_sent)
         
         return results
     

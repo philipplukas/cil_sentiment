@@ -9,6 +9,8 @@ from .word_embedder import WordEmbedder
 
 from typing import List
 
+import logging
+
 class CNN(nn.Module):
     """
     A PyTorch neural network architecture intended for use in sentiment classification.
@@ -124,18 +126,31 @@ class ConvolutionModel(Model):
 
         return loss
 
-    def predict(self, data: DataLoader) -> List[int]:
+    def predict(self, data: DataLoader, batch_size=100) -> List[int]:
 
         self.network.eval()
         self.network.to('cpu')
 
-        # Embed the sentences into a latent space.
-        embedded = self.embedder.embed_dataset(data['tweet'], self.max_words)
-        X = torch.from_numpy(np.array(embedded))
-        # Use the trained NN to make sentiment predictions.
-        Y = torch.flatten(self.network(X)).detach().numpy()
-        # Use only the sign of the output to make categorical predictions.
-        return [np.sign(y) for y in Y]
+        
+
+        total = len(data['tweet'])
+        results = []
+
+        for i in range(0, total, batch_size):
+
+            print(f"Step {i}")
+            logging.info(f"Step {i}")
+
+            # Embed the sentences into a latent space.
+            embedded = self.embedder.embed_dataset(data['tweet'][i:i+batch_size], self.max_words)
+
+            X = torch.from_numpy(np.array(embedded))
+            # Use the trained NN to make sentiment predictions.
+            Y = torch.flatten(self.network(X)).detach().numpy()
+            # Use only the sign of the output to make categorical predictions.
+            results += [np.sign(y) for y in Y]
+
+        return results
 
     def save(self, file: str):
         torch.save(self.network.state_dict(), file)
