@@ -14,7 +14,7 @@ class CNN(nn.Module):
     """
 
     # The length of kernel used in the convolution layer.
-    kernel_size = 6
+    kernel_size = 7
     # The number of unique filters produced by the convolution layer.
     num_filters = 32
 
@@ -35,7 +35,7 @@ class CNN(nn.Module):
         )
 
         # Calculate the dimensionality of the first fully-connected hidden layer.
-        self.fc_dim = (self.max_words - self.kernel_size + 1) * self.num_filters
+        self.fc_dim = self.max_words * self.num_filters
 
         self.fc1 = nn.Linear(self.fc_dim, 100, dtype=torch.float64)
         self.fc2 = nn.Linear(100, 1, dtype=torch.float64)
@@ -57,8 +57,8 @@ class ConvolutionModel(Model):
     def __init__(self, device: str = 'cpu'):
         self.embedder = WordEmbedder('data/embeddings/glove.twitter.27B.200d.txt')
         self.device = device
-        self.network = None
         self.max_words = 64
+        self.network = CNN(self.embedder.dimension, self.max_words)
 
     def train(self, data: DataLoader, iterations=200000, batch_size=50, lr=1e-3):
         """
@@ -70,9 +70,6 @@ class ConvolutionModel(Model):
 
         X = np.array(data['tweet'])
         Y = np.array(data['sent'])
-
-        # Reset the network from scratch for each attempt to retrain.
-        self.network = CNN(self.embedder.dimension, self.max_words)
 
         self.network.train()
         self.network.to(self.device)
@@ -98,7 +95,8 @@ class ConvolutionModel(Model):
         samples = torch.randint(len(X), (batch_size,))
 
         # Embed this subset of the data into a latent space.
-        embedded = self.embedder.embed_dataset((X[samples]), self.max_words)
+        border = (self.network.kernel_size - 1) // 2
+        embedded = self.embedder.embed_dataset(X[samples], self.max_words, border)
 
         # Load training examples on the GPU.
         x = torch.from_numpy(np.array(embedded)).to(self.device)
@@ -128,16 +126,19 @@ class ConvolutionModel(Model):
         self.network.to('cpu')
 
         # Embed the sentences into a latent space.
-        embedded = self.embedder.embed_dataset(data['tweet'], self.max_words)
+        border = (self.network.kernel_size - 1) // 2
+        embedded = self.embedder.embed_dataset(data['tweet'], self.max_words, border)
         X = torch.from_numpy(np.array(embedded))
         # Use the trained NN to make sentiment predictions.
         Y = torch.flatten(self.network(X)).detach().numpy()
         # Use only the sign of the output to make categorical predictions.
         return [np.sign(y) for y in Y]
 
+    def reset(self):
+        self.network = CNN(self.embedder.dimension, self.max_words)
+
     def save(self, file: str):
         torch.save(self.network.state_dict(), file)
 
     def load(self, file: str):
-        self.network = CNN(self.embedder.dimension, self.max_words)
         self.network.load_state_dict(torch.load(file))

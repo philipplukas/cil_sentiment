@@ -6,11 +6,12 @@ class WordEmbedder:
     and using them to embed words and sentences in a latent space.
     """
 
-    def __init__(self, file: str, delim: str = ' '):
+    def __init__(self, file: str, delim: str = ' ', stopwords: str = 'data/stopwords.txt'):
         """
         Load a set of latent word embeddings from a file.
         @param file: The name of the file to load word vectors from.
         @param delim: The character used in the file to separate tokens.
+        @param stopwords: The name of the file containing a list of words to skip.
         """
         print(f"Loading word embeddings from {file}.")
         # Load the embedding data from a file.
@@ -20,6 +21,7 @@ class WordEmbedder:
         # Ensure that all embeddings have the same dimensionality.
         for embedding in self.embeddings.values():
             assert len(embedding) == self.dimension
+        self.stopwords = load_stopwords(stopwords)
 
     def embed_word(self, word: str) -> list[float]:
         """
@@ -32,7 +34,7 @@ class WordEmbedder:
             if word.lower() in self.embeddings else\
             [0.0] * self.dimension
 
-    def embed_sentence(self, sentence: str, length: int = -1) -> list[list[float]]:
+    def embed_sentence(self, sentence: str, length: int = -1, border: int = 0) -> list[list[float]]:
         """
         Embed an entire sentence in a latent space.
         Individual words are assumed to be separated by spaces.
@@ -40,30 +42,36 @@ class WordEmbedder:
         in transposed form for compatibility with PyTorch convolutional layers.
         @param sentence: The sentence to be embedded.
         @param length: The number of words in a sentence (default: unconstrained).
+        @param border: The number of empty words to include on each side.
         @return: A matrix of latent representations of each word.
         """
-        words = sentence.split(' ')
+        words = [word.lower()
+            for word in sentence.split(' ')
+            if word.lower() not in self.stopwords]
+
         # Determine the number of words in a sentence.
         length = length if length != -1 else len(words)
         # Pad/trim the sentence to/from the required length.
-        words = words[:length] + ([''] * (length - len(words)))
+        words = ([''] * border) + words[:length]\
+            + ([''] * (length - len(words))) + ([''] * border)
         # Find the embedding corresponding to each word.
         embeddings = [self.embed_word(word) for word in words]
         # Transpose the embeddings for PyTorch compatibility.
         return np.transpose(embeddings)
 
-    def embed_dataset(self, dataset: list[str], length: int = -1) -> list[list[list[float]]]:
+    def embed_dataset(self, dataset: list[str], length: int = -1, border: int = 0) -> list[list[list[float]]]:
         """
         Embed a collection of sentences in a latent space.
         @param dataset: The collection of sentences to be embedded.
         @param length: The number of words in a sentence (default: maximum of any given).
+        @param border: The number of empty words to include on each side.
         @return: A tensor of latent representations of each sentence.
         """
         # Determine the number of words in each sentence.
         length = length if length != -1 else\
             max(len(sentence.split(' ')) for sentence in dataset)
         # Embed each sentence in the dataset.
-        return [self.embed_sentence(sentence, length) for sentence in dataset]
+        return [self.embed_sentence(sentence, length, border) for sentence in dataset]
 
 def load_embeddings(file: str, delim: str) -> dict[list[float]]:
     # It is necessary to specify a UTF-8 encoding because some words have special characters.
@@ -80,3 +88,9 @@ def load_embeddings(file: str, delim: str) -> dict[list[float]]:
     }
     file.close()
     return embeddings
+
+def load_stopwords(file: str, delim: str = '\n') -> set[str]:
+    file = open(file, 'r', encoding='utf-8')
+    stopwords = set([word.lower() for word in file.read().split(delim)])
+    file.close()
+    return stopwords
