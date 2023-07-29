@@ -60,7 +60,7 @@ class ConvolutionModel(Model):
         self.max_words = 64
         self.network = CNN(self.embedder.dimension, self.max_words)
 
-    def train(self, data: DataLoader, iterations=200000, batch_size=50, lr=1e-3):
+    def train(self, data: DataLoader, iterations=10, batch_size=50, lr=1e-3):
         """
         @param data: The labelled training data for training the network.
         @param iterations: The total number of iterations (not number of epochs).
@@ -70,9 +70,6 @@ class ConvolutionModel(Model):
 
         X = np.array(data['tweet'])
         Y = np.array(data['sent'])
-
-        # Reset the network from scratch for each attempt to retrain.
-        self.network = CNN(self.embedder.dimension, self.max_words)
 
         self.network.train()
         self.network.to(self.device)
@@ -136,7 +133,7 @@ class ConvolutionModel(Model):
         embedded = self.embedder.embed_dataset(X, self.max_words, border)
         x = torch.from_numpy(np.array(embedded))
         # Use the trained NN to make sentiment predictions.
-        y = torch.flatten(self.network(X)).detach().numpy()
+        y = torch.flatten(self.network(x)).detach().numpy()
         # Use only the sign of the output to make categorical predictions.
         return [np.sign(yi) for yi in y]
 
@@ -147,5 +144,4 @@ class ConvolutionModel(Model):
         torch.save(self.network.state_dict(), file)
 
     def load(self, file: str):
-        self.network = CNN(self.embedder.dimension, self.max_words)
         self.network.load_state_dict(torch.load(file))

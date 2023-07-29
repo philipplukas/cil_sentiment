@@ -26,7 +26,7 @@ import pickle
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "judge"
+MODEL = "convolution"
 PRETRAINED_ON_TWEETS = True
 USE_WANDB = False
 
@@ -129,9 +129,9 @@ elif MODEL == "convolution":
 
     data = TweetData("train_full", convolution_mode=True)
     model = ConvolutionModel(device)
-    accuracy = model.train_and_evaluate(data)
+    accuracy = model.train_and_track(data)
     model.save("data/cnn_weights.pt")
-    print(f"Accuracy: {accuracy * 100:.2F}%")
+    print([f"{a * 100:.2F}%" for a in accuracy])
 
 
 elif MODEL == "judge":

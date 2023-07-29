@@ -1,4 +1,5 @@
 import numpy as np
+from sqlitedict import SqliteDict
 
 class WordEmbedder:
     """
@@ -16,17 +17,15 @@ class WordEmbedder:
         print(f"Loading word embeddings from {file}.")
 
         if db_backend:
-            from sqlitedict import SqliteDict
             self.embeddings = SqliteDict("/cluster/scratch/guphilip/embeddings.sqlite")
             if set_up:
                 load_embeddings_sql(file, delim, self.embeddings)
 
         else:
             self.embeddings = load_embeddings(file, delim)
-            # Determine the dimensionality of the embedding.
 
         # Ensure that all embeddings have the same dimensionality.
-        self.dimension = len(next(self.embeddings.values()))
+        self.dimension = len(list(self.embeddings.values())[0])
         for embedding in self.embeddings.values():
             assert len(embedding) == self.dimension
 
@@ -99,7 +98,7 @@ def load_embeddings(file: str, delim: str) -> dict[list[float]]:
     file.close()
     return embeddings
 
-def load_embeddings_sql(file: str, delim: str, embeddings_db: SqliteDict) -> Dict[str, List[float]]:
+def load_embeddings_sql(file: str, delim: str, embeddings_db: SqliteDict) -> dict[str, list[float]]:
     # It is necessary to specify a UTF-8 encoding because some words have special characters.
     file = open(file, 'r', encoding='utf-8')
 
