@@ -6,22 +6,32 @@ class WordEmbedder:
     and using them to embed words and sentences in a latent space.
     """
 
-    def __init__(self, file: str, delim: str = ' ', stopwords: str = 'data/stopwords.txt'):
+    def __init__(self, file: str, delim: str = ' ', db_backend=False, set_up=False):
         """
         Load a set of latent word embeddings from a file.
         @param file: The name of the file to load word vectors from.
         @param delim: The character used in the file to separate tokens.
-        @param stopwords: The name of the file containing a list of words to skip.
         """
+
         print(f"Loading word embeddings from {file}.")
-        # Load the embedding data from a file.
-        self.embeddings = load_embeddings(file, delim)
-        # Determine the dimensionality of the embedding.
-        self.dimension = len(list(self.embeddings.values())[0])
+
+        if db_backend:
+            from sqlitedict import SqliteDict
+            self.embeddings = SqliteDict("/cluster/scratch/guphilip/embeddings.sqlite")
+            if set_up:
+                load_embeddings_sql(file, delim, self.embeddings)
+
+        else:
+            self.embeddings = load_embeddings(file, delim)
+            # Determine the dimensionality of the embedding.
+
         # Ensure that all embeddings have the same dimensionality.
+        self.dimension = len(next(self.embeddings.values()))
         for embedding in self.embeddings.values():
             assert len(embedding) == self.dimension
-        self.stopwords = load_stopwords(stopwords)
+
+        # Load the list of words to skip.
+        self.stopwords = load_stopwords('data/stopwords.txt')
 
     def embed_word(self, word: str) -> list[float]:
         """
@@ -89,8 +99,33 @@ def load_embeddings(file: str, delim: str) -> dict[list[float]]:
     file.close()
     return embeddings
 
+def load_embeddings_sql(file: str, delim: str, embeddings_db: SqliteDict) -> Dict[str, List[float]]:
+    # It is necessary to specify a UTF-8 encoding because some words have special characters.
+    file = open(file, 'r', encoding='utf-8')
+
+    # lines = file.read().split('\n')
+
+    counter = 0
+    for line in file:
+
+        if line.strip() != '':
+            token = line.split(delim)[0].lower()
+            latent_repr = [float(d) for d in line.split(delim)[1:]]
+            embeddings_db[token] = latent_repr
+
+            counter += 1
+            if counter % 100 == 0:
+                embeddings_db.commit()
+
+    file.close()
+
 def load_stopwords(file: str, delim: str = '\n') -> set[str]:
     file = open(file, 'r', encoding='utf-8')
     stopwords = set([word.lower() for word in file.read().split(delim)])
     file.close()
     return stopwords
+
+if __name__ == "__main__":
+    embeddings_file = "/cluster/scratch/guphilip/glove.twitter.27B.200d.txt"
+    WordEmbedder(embeddings_file, set_up=True)
+    print("Finished")

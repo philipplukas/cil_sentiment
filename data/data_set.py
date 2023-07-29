@@ -68,7 +68,7 @@ def parse_tweets(file_path: str) -> List[str]:
 
 class TweetData(Dataset):
 
-    def __init__(self, split_name: str) -> None:
+    def __init__(self, split_name: str, convolution_mode = False) -> None:
 
         if split_name not in SPLIT_NAMES:
             raise ValueError("Split doesn't exist")
@@ -77,6 +77,7 @@ class TweetData(Dataset):
         if "test" in split_name:
             self.test_mode = True
 
+        self.convolution_mode = convolution_mode
 
         # Set up pandas table
         # Depending on whether we act on testing data for prediction,
@@ -120,12 +121,13 @@ class TweetData(Dataset):
         return self.pd_table.shape[0]
     
 
-    def __getitem__(self, index: int | List[int]) -> dict:
+    def __getitem__(self, index: Union[int, List[int]]) -> dict:
 
-        index = [index] if isinstance(index, int) else index
+        if self.convolution_mode:
+            index = [index] if isinstance(index, int) else index
 
-        if any(i >= len(self) for i in index):
-            raise IndexError
+            if any(i >= len(self) for i in index):
+                raise IndexError
 
         data_element = self.pd_table.iloc[index]
         if self.test_mode:        

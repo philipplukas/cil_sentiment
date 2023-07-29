@@ -10,6 +10,8 @@ from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, R
 from torch.utils.data import DataLoader
 import nltk
 
+from transformers import AutoModelForSequenceClassification
+
 import torch
 import logging
 
@@ -18,11 +20,13 @@ import wandb
 
 from datasets import Dataset
 
+import pickle
+
 # Log info level as well
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "convolution"
+MODEL = "judge"
 PRETRAINED_ON_TWEETS = True
 USE_WANDB = False
 
@@ -112,6 +116,7 @@ elif MODEL == "roberta-finetuned":
 
     #accuracy = model.evaluate(loader)
     #print("Accuracy of zero-shot classification: {}".format(accuracy))
+    model.save("./data/models/tweetbert-finetuned.save")
 
 elif MODEL == "bag-of-words":
 
@@ -122,8 +127,63 @@ elif MODEL == "bag-of-words":
 
 elif MODEL == "convolution":
 
-    data = TweetData("train_full")
+    data = TweetData("train_full", convolution_mode=True)
     model = ConvolutionModel(device)
     accuracy = model.train_and_evaluate(data)
     model.save("data/cnn_weights.pt")
     print(f"Accuracy: {accuracy * 100:.2F}%")
+
+
+elif MODEL == "judge":
+   
+  cnn_model = ConvolutionModel(device)
+  cnn_model.load('./data/models/cnn_weights.pt')
+
+  trans_model = RobertaBaseTweetFinetuned(wandb.config, device)
+  trans_model.load("./data/models/tweetbert-finetuned.save")
+
+  print("Succesfull with loading")
+
+  data = TweetData("train_sample", convolution_mode=True)
+  data = data[list(range(0,10000))]
+  original_data  = data.copy()
+  data_trans = TweetData("train_sample")
+  loader = DataLoader(data_trans, batch_size=None)
+
+  #output_cnn = cnn_model.predict(data)
+  #with open("./data/models/cnn_results", mode='wb') as fp:
+  #   pickle.dump(output_cnn, fp)
+
+  with open("./data/models/cnn_results", mode='rb') as fp:
+    output_cnn = pickle.load(fp)
+
+  #output_trans = trans_model.predict(data_trans, num_elem=10000, test_mode=False)
+
+  with open("./data/models/trans_results", mode='rb') as fp:
+    output_trans = pickle.load(fp)
+  #for i in range(len(data['tweet'])):
+
+  # Calculate whether transformers model or cnn model was correct.
+  data['sent'][:10000]
+
+  for i in range(10000):
+     if data['sent'][i] == output_trans[i]:
+             data['sent'][i] = output_trans[i]
+
+     else:
+             data['sent'][i] = output_cnn[i]
+
+  eval_data = {}
+  eval_data['tweet'] = data['tweet'][9000:10000]
+  eval_data['sent'] = data['sent'][9000:10000]
+
+  data['tweet'] = data['tweet'][:9000]
+  data['sent'] = data['sent'][:9000]
+
+  
+  
+  model = BagOfWords()
+  model.train(data, bag_of_words_data=original_data)
+
+  accuracy = model.evaluate(eval_data)
+  print(f"Accuracy: {accuracy*100:.2F}%")

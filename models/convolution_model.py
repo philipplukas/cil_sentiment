@@ -71,6 +71,9 @@ class ConvolutionModel(Model):
         X = np.array(data['tweet'])
         Y = np.array(data['sent'])
 
+        # Reset the network from scratch for each attempt to retrain.
+        self.network = CNN(self.embedder.dimension, self.max_words)
+
         self.network.train()
         self.network.to(self.device)
 
@@ -141,4 +144,5 @@ class ConvolutionModel(Model):
         torch.save(self.network.state_dict(), file)
 
     def load(self, file: str):
+        self.network = CNN(self.embedder.dimension, self.max_words)
         self.network.load_state_dict(torch.load(file))

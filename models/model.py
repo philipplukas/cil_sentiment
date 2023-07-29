@@ -67,6 +67,7 @@ class Model(ABC):
         self.train(train_data)
         return self.evaluate(test_data)
 
+    @final
     def train_and_track(self, data: DataLoader, n: int = 1000, p: float = 0.02) -> list[float]:
         """
         Train the model based on a portion of the given dataset,

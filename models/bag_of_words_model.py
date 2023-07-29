@@ -4,6 +4,8 @@ from sklearn.linear_model import SGDClassifier
 
 from .model import Model
 
+from typing import List
+
 class BagOfWords(Model):
     """
     A model for classifying the sentiment (positive/negative) of a Tweet.
@@ -15,11 +17,15 @@ class BagOfWords(Model):
     # Classifier for performing linear regression on count vectors.
     clf = None
 
-    def train(self, data: DataLoader):
-        counts = self.cv.fit_transform(data['tweet'])
+    def train(self, data: DataLoader, bag_of_words_data = None):
+        if bag_of_words_data:
+            self.cv.fit(bag_of_words_data['tweet'])
+            counts = self.cv.transform(data['tweet'])
+        else:
+            counts = self.cv.fit_transform(data['tweet'])
         self.clf = SGDClassifier(loss='hinge')\
             .fit(counts, data['sent'])
 
-    def predict(self, data: DataLoader) -> list[int]:
+    def predict(self, data: DataLoader) -> List[int]:
         counts = self.cv.transform(data['tweet'])
         return self.clf.predict(counts)
