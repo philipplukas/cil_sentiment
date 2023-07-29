@@ -123,19 +123,22 @@ class ConvolutionModel(Model):
 
         return loss
 
-    def predict(self, data: DataLoader) -> list[int]:
-
+    def predict(self, data: DataLoader, batch_size=100) -> list[int]:
         self.network.eval()
         self.network.to('cpu')
+        return [y
+            for i in range(0, len(data['tweet']), batch_size)
+            for y in self.predict_batch(data['tweet'][i:i+batch_size])]
 
+    def predict_batch(self, X):
         # Embed the sentences into a latent space.
         border = (self.network.kernel_size - 1) // 2
-        embedded = self.embedder.embed_dataset(data['tweet'], self.max_words, border)
-        X = torch.from_numpy(np.array(embedded))
+        embedded = self.embedder.embed_dataset(X, self.max_words, border)
+        x = torch.from_numpy(np.array(embedded))
         # Use the trained NN to make sentiment predictions.
-        Y = torch.flatten(self.network(X)).detach().numpy()
+        y = torch.flatten(self.network(X)).detach().numpy()
         # Use only the sign of the output to make categorical predictions.
-        return [np.sign(y) for y in Y]
+        return [np.sign(yi) for yi in y]
 
     def reset(self):
         self.network = CNN(self.embedder.dimension, self.max_words)
