@@ -182,7 +182,14 @@ elif MODEL == "judge":
   train_data['sent'] = []
 
   for i in range(train_size):
-     if data['sent'][i] == output_trans[i]:
+     if data['sent'][i] == output_trans[i] and data['sent'][i] == output_cnn[i]:
+         if random.random() <= 0.5:
+             train_data['tweet'].append(data['tweet'][i])
+             train_data['sent'].append(1)
+         else:
+             train_data['tweet'].append(data['tweet'][i])
+             train_data['sent'].append(-1)
+     elif data['sent'][i] == output_trans[i]:
              train_data['tweet'].append(data['tweet'][i])
              train_data['sent'].append(1)
 
