@@ -17,6 +17,15 @@ General Information about the semester project can be found here: https://docs.g
 Put the following files in the ```data/models``` directory to make it work
 https://drive.google.com/drive/folders/1Bar-I8oxDV5-ahozwOdtOugB79S8Mu5q?usp=sharing
 
+## Note for convolution model option
+
+This needs an additional embedding file which is too big to store directly in Git Hub.
+However, it can be downloaded from the following site:
+https://www.kaggle.com/datasets/fullmetal26/glovetwitter27b100dtxt/discussion
+
+After the download, simply create a subdirectory ```embeddings``` in the ```data``` directory
+and put the unzipped embedding file there.
+
 ## Directory structure
 
 - ``` models ```
