@@ -177,23 +177,31 @@ elif MODEL == "judge":
   # Calculate whether transformers model or cnn model was correct.
   #data['sent'][:10000]
 
+  train_data = {}
+  train_data['tweet'] = []
+  train_data['sent'] = []
+
   for i in range(train_size):
      if data['sent'][i] == output_trans[i]:
-             data['sent'][i] = output_trans[i]
+             train_data['tweet'].append(data['tweet'][i])
+             train_data['sent'].append(1)
 
+     elif data['sent'][i] == output_cnn[i]:
+             train_data['tweet'].append(data['tweet'][i])
+             train_data['sent'].append(-1)
      else:
-             data['sent'][i] = output_cnn[i]
+             continue
 
   eval_data = {}
-  eval_data['tweet'] = data['tweet'][train_size-1000:train_size]
-  eval_data['sent'] = data['sent'][train_size-1000:train_size]
+  eval_data['tweet'] = train_data['tweet'][-1000:]
+  eval_data['sent'] = train_data['sent'][-1000:]
 
   test_data = {}
   test_data['tweet'] = original_data['tweet'][train_size:train_size+1000]
   test_data['sent'] = original_data['sent'][train_size:train_size+1000]
 
-  data['tweet'] = data['tweet'][:train_size-1000]
-  data['sent'] = data['sent'][:train_size-1000]
+  data['tweet'] = train_data['tweet'][:-1000]
+  data['sent'] = train_data['sent'][:-1000]
   
   model = BagOfWords()
   model.train(data, bag_of_words_data=original_data,alpha=10)
