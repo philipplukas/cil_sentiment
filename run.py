@@ -135,6 +135,8 @@ elif MODEL == "convolution":
 
 
 elif MODEL == "judge":
+
+  train_size = 199000
    
   cnn_model = ConvolutionModel(device)
   cnn_model.load('./data/models/cnn_weights.pt')
@@ -145,8 +147,14 @@ elif MODEL == "judge":
   print("Succesfull with loading")
 
   data = TweetData("train_sample", convolution_mode=True)
-  data = data[list(range(0,10000))]
-  original_data  = data.copy()
+  original_data  = data[list(range(0,len(data)))]
+  tweetbert_test_data = islice(TweetData("train_sample"),train_size, train_size+1000)
+
+  data = {}
+  data["tweet"] = original_data['tweet'][:train_size]
+  data["sent"] = original_data['sent'][:train_size]
+  #data = data[:10000]
+  #original_data  = data.copy()
   data_trans = TweetData("train_sample")
   loader = DataLoader(data_trans, batch_size=None)
 
@@ -157,16 +165,19 @@ elif MODEL == "judge":
   with open("./data/models/cnn_results", mode='rb') as fp:
     output_cnn = pickle.load(fp)
 
-  #output_trans = trans_model.predict(data_trans, num_elem=10000, test_mode=False)
+  #output_trans = trans_model.predict(data_trans, num_elem=200000, test_mode=False)
+
+  #with open("./data/models/trans_results", mode='wb') as fp:
+  #   pickle.dump(output_trans, fp)
 
   with open("./data/models/trans_results", mode='rb') as fp:
-    output_trans = pickle.load(fp)
+      output_trans = pickle.load(fp)
   #for i in range(len(data['tweet'])):
 
   # Calculate whether transformers model or cnn model was correct.
-  data['sent'][:10000]
+  #data['sent'][:10000]
 
-  for i in range(10000):
+  for i in range(train_size):
      if data['sent'][i] == output_trans[i]:
              data['sent'][i] = output_trans[i]
 
@@ -174,16 +185,36 @@ elif MODEL == "judge":
              data['sent'][i] = output_cnn[i]
 
   eval_data = {}
-  eval_data['tweet'] = data['tweet'][9000:10000]
-  eval_data['sent'] = data['sent'][9000:10000]
+  eval_data['tweet'] = data['tweet'][train_size-1000:train_size]
+  eval_data['sent'] = data['sent'][train_size-1000:train_size]
 
-  data['tweet'] = data['tweet'][:9000]
-  data['sent'] = data['sent'][:9000]
+  test_data = {}
+  test_data['tweet'] = original_data['tweet'][train_size:train_size+1000]
+  test_data['sent'] = original_data['sent'][train_size:train_size+1000]
 
-  
+  data['tweet'] = data['tweet'][:train_size-1000]
+  data['sent'] = data['sent'][:train_size-1000]
   
   model = BagOfWords()
-  model.train(data, bag_of_words_data=original_data)
+  model.train(data, bag_of_words_data=original_data,alpha=10)
 
   accuracy = model.evaluate(eval_data)
   print(f"Accuracy: {accuracy*100:.2F}%")
+
+  results_trans = trans_model.predict(tweetbert_test_data, test_mode=False)
+  results_cnn = cnn_model.predict(test_data)
+  model_results = model.predict(test_data)
+  results = []
+  # Calcualt test accuracy
+  for i in range(0,1000):
+      #res = model.predict(data['tweet'][i])
+      res = model_results[i]
+      if res == 1:
+          results.append(results_trans[i])
+      else:
+          results.append(results_cnn[i])
+
+  print("So far soo good")
+  test_accuracy = len([1 for y0, y1 in zip(test_data['sent'], results) if y0 * y1 > 0]) / len(results)
+
+  print(test_accuracy)
