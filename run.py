@@ -204,7 +204,7 @@ elif MODEL == "judge":
   data['sent'] = train_data['sent'][:-1000]
   
   model = BagOfWords()
-  model.train(data, bag_of_words_data=original_data,alpha=10)
+  model.train(data, bag_of_words_data=original_data)
 
   accuracy = model.evaluate(eval_data)
   print(f"Accuracy: {accuracy*100:.2F}%")
