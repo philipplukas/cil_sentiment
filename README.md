@@ -11,14 +11,9 @@ See detailed instructions about this project here: https://docs.google.com/docum
 
 General Information about the semester project can be found here: https://docs.google.com/document/d/1kXMPYBRJYzMQNceVUpsaQBSMec8kuaAHiIRGQuG9DQA/edit?usp=sharing
 
-## Note for the Judge model option
-
-Put the following files in the ```data/models``` directory to make it work
-https://drive.google.com/drive/folders/1Bar-I8oxDV5-ahozwOdtOugB79S8Mu5q?usp=sharing
-
 ## Note for convolution model option
 
-This needs an additional embedding file which is too big to store directly in Git Hub.
+This needs an additional embedding file which is too big to upload.
 However, it can be downloaded from the following site:
 https://www.kaggle.com/datasets/fullmetal26/glovetwitter27b100dtxt/discussion
 
@@ -31,8 +26,7 @@ and put the unzipped embedding file there.
   In this directory, the code for all the model implementations remains.
 
 - ``` data ```
-  Here, the class handling the data can be found.Moreoverr, all the results are stored in the ```results``` subdirectory
-
+  Here, the class handling the data can be found. Moreover, all the results are stored in the ```results``` subdirectory.
 
 
 ## Dataset Description
@@ -64,22 +58,3 @@ The dataset should have the following files:
 - test_data.txt:
 - train_neg_full.txt: the full negative training samples
 - train_pos_full.txt: the full positive training samples
-
-#### Build the Co-occurence Matrix
-
-To build a co-occurence matrix, run the following commands.  (Remember to put the data files
-in the correct locations)
-
-Note that the cooc.py script takes a few minutes to run, and displays the number of tweets processed.
-
-- build_vocab.sh
-- cut_vocab.sh
-- python3 pickle_vocab.py
-- python3 cooc.py
-
-####  Template for Glove Question
-
-Your task is to fill in the SGD updates to the template
-glove_template.py
-
-Once you tested your system on the small set of 10% of all tweets, we suggest you run on the full datasets train_pos_full.txt, train_neg_full.txt
