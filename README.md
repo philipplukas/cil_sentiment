@@ -1,8 +1,40 @@
 # Overview
 
+This project is about sentiment prediction on tweet data.
+We have implemented various methods to achieve this task.
+The main file for running the models is ```run.py```.
+To run any of the models simply change the variable ```MODEL``` in this file.
+Then you can simply run the model training/evaluation using ```python3 run.py```
+Further information can be fond in the comments of this file.
+
 See detailed instructions about this project here: https://docs.google.com/document/d/1D2T5ckhOxnW8C3Xq01GUNaQXMo6jbXkU19qFZ_SoswU/edit?usp=sharing
 
 General Information about the semester project can be found here: https://docs.google.com/document/d/1kXMPYBRJYzMQNceVUpsaQBSMec8kuaAHiIRGQuG9DQA/edit?usp=sharing
+
+## Note for the Judge model option
+
+Put the following files in the ```data/models``` directory to make it work
+https://drive.google.com/drive/folders/1Bar-I8oxDV5-ahozwOdtOugB79S8Mu5q?usp=sharing
+
+## Note for convolution model option
+
+This needs an additional embedding file which is too big to store directly in Git Hub.
+However, it can be downloaded from the following site:
+https://www.kaggle.com/datasets/fullmetal26/glovetwitter27b100dtxt/discussion
+
+After the download, simply create a subdirectory ```embeddings``` in the ```data``` directory
+and put the unzipped embedding file there.
+
+## Directory structure
+
+- ``` models ```
+  In this directory, the code for all the model implementations remains.
+
+- ``` data ```
+  Here, the class handling the data can be found.Moreoverr, all the results are stored in the ```results``` subdirectory
+
+
+
 ## Dataset Description
 ### File descriptions
 
