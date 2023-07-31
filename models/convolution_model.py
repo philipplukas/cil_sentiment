@@ -60,7 +60,7 @@ class ConvolutionModel(Model):
         self.max_words = 64
         self.network = CNN(self.embedder.dimension, self.max_words)
 
-    def train(self, data: DataLoader, iterations=10, batch_size=50, lr=1e-3):
+    def train(self, data: DataLoader, iterations=120000, batch_size=50, lr=1e-3):
         """
         @param data: The labelled training data for training the network.
         @param iterations: The total number of iterations (not number of epochs).

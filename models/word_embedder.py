@@ -1,5 +1,4 @@
 import numpy as np
-from sqlitedict import SqliteDict
 
 class WordEmbedder:
     """
@@ -7,7 +6,7 @@ class WordEmbedder:
     and using them to embed words and sentences in a latent space.
     """
 
-    def __init__(self, file: str, delim: str = ' ', db_backend=False, set_up=False):
+    def __init__(self, file: str, delim: str = ' '):
         """
         Load a set of latent word embeddings from a file.
         @param file: The name of the file to load word vectors from.
@@ -16,13 +15,7 @@ class WordEmbedder:
 
         print(f"Loading word embeddings from {file}.")
 
-        if db_backend:
-            self.embeddings = SqliteDict("/cluster/scratch/guphilip/embeddings.sqlite")
-            if set_up:
-                load_embeddings_sql(file, delim, self.embeddings)
-
-        else:
-            self.embeddings = load_embeddings(file, delim)
+        self.embeddings = load_embeddings(file, delim)
 
         # Ensure that all embeddings have the same dimensionality.
         self.dimension = len(list(self.embeddings.values())[0])
@@ -98,33 +91,8 @@ def load_embeddings(file: str, delim: str) -> dict[list[float]]:
     file.close()
     return embeddings
 
-def load_embeddings_sql(file: str, delim: str, embeddings_db: SqliteDict) -> dict[str, list[float]]:
-    # It is necessary to specify a UTF-8 encoding because some words have special characters.
-    file = open(file, 'r', encoding='utf-8')
-
-    # lines = file.read().split('\n')
-
-    counter = 0
-    for line in file:
-
-        if line.strip() != '':
-            token = line.split(delim)[0].lower()
-            latent_repr = [float(d) for d in line.split(delim)[1:]]
-            embeddings_db[token] = latent_repr
-
-            counter += 1
-            if counter % 100 == 0:
-                embeddings_db.commit()
-
-    file.close()
-
 def load_stopwords(file: str, delim: str = '\n') -> set[str]:
     file = open(file, 'r', encoding='utf-8')
     stopwords = set([word.lower() for word in file.read().split(delim)])
     file.close()
     return stopwords
-
-if __name__ == "__main__":
-    embeddings_file = "/cluster/scratch/guphilip/glove.twitter.27B.200d.txt"
-    WordEmbedder(embeddings_file, set_up=True)
-    print("Finished")

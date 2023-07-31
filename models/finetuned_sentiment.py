@@ -15,7 +15,7 @@ from scipy.special import softmax
 import csv
 import urllib.request
 
-from ..model import Model
+from models.model import Model
 
 from torch.utils.data import DataLoader,Dataset
 
@@ -23,6 +23,8 @@ from sklearn.metrics import confusion_matrix
 
 from typing import List, Tuple
 import logging
+
+from datasets import Dataset
 
 class RobertaBaseTweetFinetuned(Model):
 
@@ -33,7 +35,7 @@ class RobertaBaseTweetFinetuned(Model):
     
         for t in text.split(" "):
             # t = '@user' if t.startswith('@') and len(t) > 1 else t
-            # Change this since <user> is used in soruce data but @user by this model.
+            # Change this since <user> is used in source data but @user by this model.
             t = '@user' if t == '<user>' else t
             t = 'http' if t == '<url>' else t
             new_text.append(t)
@@ -73,7 +75,9 @@ class RobertaBaseTweetFinetuned(Model):
     """
     Since we are performing zero-shot, no training is required.
     """
-    def train(self, train_dataset: Dataset, log_callback):
+    def train(self, train_dataset: Dataset, log_callback=None):
+        train_dataset = Dataset.from_dict(train_dataset)
+
         # Don't pin memory to avoid error message
         training_args = TrainingArguments(output_dir="test_trainer", evaluation_strategy="steps", dataloader_pin_memory=False, eval_steps=5, load_best_model_at_end=True, per_device_train_batch_size=1, gradient_accumulation_steps=8, max_steps=200)
 
@@ -97,7 +101,7 @@ class RobertaBaseTweetFinetuned(Model):
         train_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'], device=self.device)
 
 
-        train_dataset = train_dataset.train_test_split(test_size=self.config['train_test_ratio'])
+        train_dataset = train_dataset.train_test_split(test_size=self.config['train_test_ratio'] if self.config else 0.001)
 
 
         # Callback to compute metrics for huggingface Trainer class
@@ -111,7 +115,8 @@ class RobertaBaseTweetFinetuned(Model):
         class EvalCallback(TrainerCallback):
             def on_eval(self, args, state, control, metrics=None, **kwargs):
                 if state.is_local_process_zero:
-                    log_callback(metrics)
+                    if log_callback:
+                        log_callback(metrics)
 
         # Without pin_memory=False, there will be an error
         trainer = Trainer(
@@ -119,8 +124,8 @@ class RobertaBaseTweetFinetuned(Model):
             args=training_args,
             train_dataset=train_dataset["train"],
             eval_dataset=train_dataset["test"],
-            compute_metrics=compute_metrics,
-            callbacks=[EvalCallback()]
+            #compute_metrics=compute_metrics,
+            #callbacks=[EvalCallback()]
         )
 
         trainer.train()
@@ -129,6 +134,7 @@ class RobertaBaseTweetFinetuned(Model):
         self.model.eval()
 
     def evaluate(self, test_data: DataLoader):
+        test_data = Dataset.from_dict(test_data)
 
         correct = 0
         total = 0
@@ -176,7 +182,8 @@ class RobertaBaseTweetFinetuned(Model):
 
         return correct/total, confusion_matrix(y_true, y_pred)
     
-    def predict(self, test_data: DataLoader, num_elem : int = None, test_mode = True) -> List[int]:
+    def predict(self, test_data: DataLoader, num_elem : int = None, test_mode = False) -> List[int]:
+        test_data = Dataset.from_dict(test_data)
 
         # First element is index and second element sentiment
         results : List[Tuple[int, int]] = []

@@ -68,7 +68,7 @@ class Model(ABC):
         return self.evaluate(test_data)
 
     @final
-    def train_and_track(self, data: DataLoader, n: int = 10, p: float = 0.01) -> list[float]:
+    def train_and_track(self, data: DataLoader, n: int = 100, p: float = 0.01) -> list[float]:
         """
         Train the model based on a portion of the given dataset,
         reserving another potion for ongoing testing.
@@ -106,6 +106,11 @@ def partition_dataset(data: DataLoader, p: float = 0.1) -> (DataLoader, DataLoad
     @param p: The portion of datapoints reserved for the validation set.
     @return: A tuple of the training and validation sets respectively.
     """
-    test_ids = np.random.randint(0, len(data), int(p * len(data)))
-    train_ids = np.setdiff1d(range(len(data)), test_ids)
-    return data[test_ids], data[train_ids]
+    data['tweet'].reset_index(inplace=True, drop=True)
+    data['sent'].reset_index(inplace=True, drop=True)
+    n = len(data['tweet'])
+    test_ids = np.random.randint(0, n, int(p * n))
+    train_ids = np.setdiff1d(range(n), test_ids)
+    test = {'tweet': data['tweet'][test_ids], 'sent': data['sent'][test_ids]}
+    train = {'tweet': data['tweet'][train_ids], 'sent': data['sent'][train_ids]}
+    return test, train

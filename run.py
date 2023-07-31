@@ -1,3 +1,4 @@
+import os
 import random
 
 import numpy as np
@@ -5,12 +6,10 @@ import numpy as np
 from data.data_set import TweetData, ResultData
 from models.bag_of_words_model import BagOfWords
 from models.convolution_model import ConvolutionModel
-from models.transformers.pretrained_sentiment import RobertaBaseTweetSentiment, RobertaBaseSentiment
-from models.transformers.finetuned_sentiment import RobertaBaseTweetFinetuned, RobertaBaseFinetuned
+from models.judge_model import JudgeModel
+from models.pretrained_sentiment import RobertaBaseTweetSentiment, RobertaBaseSentiment
+from models.finetuned_sentiment import RobertaBaseTweetFinetuned, RobertaBaseFinetuned
 from torch.utils.data import DataLoader
-import nltk
-
-from transformers import AutoModelForSequenceClassification
 
 import torch
 import logging
@@ -20,13 +19,11 @@ import wandb
 
 from datasets import Dataset
 
-import pickle
-
 # Log info level as well
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "convolution"
+MODEL = "judge"
 PRETRAINED_ON_TWEETS = True
 USE_WANDB = False
 
@@ -45,6 +42,9 @@ if USE_WANDB:
   wandb.config = {
     "train_test_ratio": 0.001
   }
+
+else:
+    os.environ["WANDB_DISABLED"] = "true"
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -127,7 +127,7 @@ elif MODEL == "bag-of-words":
 
 elif MODEL == "convolution":
 
-    data = TweetData("train_full", convolution_mode=True)
+    data = TweetData("train_full")
     model = ConvolutionModel(device)
     accuracy = model.train_and_track(data)
     model.save("data/cnn_weights.pt")
@@ -135,55 +135,16 @@ elif MODEL == "convolution":
 
 
 elif MODEL == "judge":
+
+    data = TweetData("train_full")
+    data = data[range(len(data))]
    
-  cnn_model = ConvolutionModel(device)
-  cnn_model.load('./data/models/cnn_weights.pt')
+    model = JudgeModel([
+        RobertaBaseTweetFinetuned(None, device),
+        ConvolutionModel(device)
+    ])
 
-  trans_model = RobertaBaseTweetFinetuned(wandb.config, device)
-  trans_model.load("./data/models/tweetbert-finetuned.save")
+    accuracy = model.train_and_evaluate(data)
+    model.save("data/judge")
+    print(f"Accuracy: {accuracy * 100:.2F}%")
 
-  print("Succesfull with loading")
-
-  data = TweetData("train_sample", convolution_mode=True)
-  data = data[list(range(0,10000))]
-  original_data  = data.copy()
-  data_trans = TweetData("train_sample")
-  loader = DataLoader(data_trans, batch_size=None)
-
-  #output_cnn = cnn_model.predict(data)
-  #with open("./data/models/cnn_results", mode='wb') as fp:
-  #   pickle.dump(output_cnn, fp)
-
-  with open("./data/models/cnn_results", mode='rb') as fp:
-    output_cnn = pickle.load(fp)
-
-  #output_trans = trans_model.predict(data_trans, num_elem=10000, test_mode=False)
-
-  with open("./data/models/trans_results", mode='rb') as fp:
-    output_trans = pickle.load(fp)
-  #for i in range(len(data['tweet'])):
-
-  # Calculate whether transformers model or cnn model was correct.
-  data['sent'][:10000]
-
-  for i in range(10000):
-     if data['sent'][i] == output_trans[i]:
-             data['sent'][i] = output_trans[i]
-
-     else:
-             data['sent'][i] = output_cnn[i]
-
-  eval_data = {}
-  eval_data['tweet'] = data['tweet'][9000:10000]
-  eval_data['sent'] = data['sent'][9000:10000]
-
-  data['tweet'] = data['tweet'][:9000]
-  data['sent'] = data['sent'][:9000]
-
-  
-  
-  model = BagOfWords()
-  model.train(data, bag_of_words_data=original_data)
-
-  accuracy = model.evaluate(eval_data)
-  print(f"Accuracy: {accuracy*100:.2F}%")

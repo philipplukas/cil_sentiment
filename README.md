@@ -1,4 +1,3 @@
-
 # Overview
 
 See detailed instructions about this project here: https://docs.google.com/document/d/1D2T5ckhOxnW8C3Xq01GUNaQXMo6jbXkU19qFZ_SoswU/edit?usp=sharing

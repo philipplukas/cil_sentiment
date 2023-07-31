@@ -10,7 +10,7 @@ from scipy.special import softmax
 import csv
 import urllib.request
 
-from ..model import Model
+from models.model import Model
 
 from torch.utils.data import DataLoader
 
