@@ -23,7 +23,7 @@ from datasets import Dataset
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-MODEL = "judge"
+MODEL = "convolution"
 PRETRAINED_ON_TWEETS = True
 USE_WANDB = False
 
@@ -54,7 +54,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
-
+# EXPERIMENT 1: Pre-trained transformer
 if MODEL == "roberta-zero_shot":
 
     data = TweetData("eval_train")
@@ -81,59 +81,65 @@ if MODEL == "roberta-zero_shot":
 
     ResultData(results).store("tweetbert-pretrained")
 
-    #results_artifact = wandb.Artifact('pretrained_results', type='result_file')
-    #results_artifact.add_file(file_path)
 
-    #logging.info("log artifact")
-    #wandb.log_artifact(results_artifact)
-
+# EXPERIMENT 2: Fine-tuned transformer
 elif MODEL == "roberta-finetuned":
 
     data = TweetData("train_sample")
+    data = data[range(len(data))]
 
     if PRETRAINED_ON_TWEETS:
-      model = RobertaBaseTweetFinetuned(wandb.config, device)
+      model = RobertaBaseTweetFinetuned(wandb.config if USE_WANDB else None, device)
     else:
       model = RobertaBaseFinetuned(wandb.config, device)
-       
-
-    # Turn it into a huggingface dataset object to access more powerful data manipulation methods.
-    dataset = Dataset.from_list(data)
     
     # Finetune model
-    model.train(dataset, wandb.log)
+    model.train(data, wandb.log if USE_WANDB else None)
 
-    # For inference, no batching required.
-    # loader = DataLoader(data, batch_size=None)
     test_data = TweetData("test")
-    loader = DataLoader(test_data, batch_size=None)
-
-    logging.info("Start prediction on test dataset")
-    results = model.predict(loader)
-    logging.info("Finished prediction step")
- 
+    test_data = test_data[range(len(test_data))]
+    results = model.predict(test_data)
     ResultData(results).store("tweetbert-finetuned")
 
     #accuracy = model.evaluate(loader)
     #print("Accuracy of zero-shot classification: {}".format(accuracy))
     model.save("./data/models/tweetbert-finetuned.save")
 
+
+# EXPERIMENT 3: Bag of words
 elif MODEL == "bag-of-words":
 
     data = TweetData("train_sample")
+    data = data[range(len(data))]
+
     model = BagOfWords()
     accuracy = model.cross_validate(data)
     print(f"Accuracy: {accuracy*100:.2F}%")
 
+    test_data = TweetData("test")
+    test_data = test_data[range(len(test_data))]
+    results = model.predict(test_data)
+    ResultData(results).store("bag-of-words")
+
+
+# EXPERIMENT 5: CNN
 elif MODEL == "convolution":
 
     data = TweetData("train_full")
+    data = data[range(len(data))]
+
     model = ConvolutionModel(device)
     accuracy = model.train_and_track(data)
     model.save("data/cnn_weights.pt")
     print([f"{a * 100:.2F}%" for a in accuracy])
 
+    test_data = TweetData("test")
+    test_data = test_data[range(len(test_data))]
+    results = model.predict(test_data)
+    ResultData(results).store("convolution")
 
+
+# EXPERIMENT 6: Judge w/ transformer & CNN
 elif MODEL == "judge":
 
     data = TweetData("train_full")
@@ -147,4 +153,9 @@ elif MODEL == "judge":
     accuracy = model.train_and_evaluate(data)
     model.save("data/judge")
     print(f"Accuracy: {accuracy * 100:.2F}%")
+
+    test_data = TweetData("test")
+    test_data = test_data[range(len(test_data))]
+    results = model.predict(test_data)
+    ResultData(results).store("judge")
 
